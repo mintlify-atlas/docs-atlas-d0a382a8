@@ -1,0 +1,97 @@
+{
+  "projectType": "saas",
+  "projectName": "CalPal",
+  "projectDescription": "A mobile app for tracking food purchases, nutrition intake, and personal health metrics with barcode scanning and AI-powered logging.",
+  "theme": "almond",
+  "primaryColor": "#4caf50",
+  "lightColor": "#81c784",
+  "darkColor": "#388e3c",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/food-logging",
+              "features/barcode-scanning",
+              "features/ai-food-entry",
+              "features/restaurant-menus",
+              "features/health-tracking",
+              "features/analytics"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/user-profile",
+              "guides/data-privacy",
+              "guides/theming"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Technical Reference",
+        "groups": [
+          {
+            "group": "Architecture",
+            "pages": [
+              "technical/architecture",
+              "technical/state-management",
+              "technical/database"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "technical/components/barcode-scanner",
+              "technical/components/food-log-modal",
+              "technical/components/ai-input",
+              "technical/components/collapsible"
+            ]
+          },
+          {
+            "group": "API Integration",
+            "pages": [
+              "technical/api/open-food-facts",
+              "technical/api/ai-service"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Barcode scanning with Open Food Facts API",
+    "AI-powered food logging via natural language",
+    "Restaurant menu explorer with nutritional filters",
+    "Weight and BMI tracking with historical charts",
+    "Analytics dashboard with spending and macro insights",
+    "Local-first data storage with WatermelonDB",
+    "Redux state management",
+    "Light/dark theme support"
+  ],
+  "publicApiSurface": [
+    "getFoodEntryFromText(description, opts?)",
+    "getRestaurantMenu(restaurantId?)",
+    "loadLogsFromStorage()",
+    "saveLogsToStorage(logs)",
+    "loadUserProfileFromStorage()",
+    "saveUserProfileToStorage(profile)",
+    "addLog(entry)",
+    "setLogs(logs)",
+    "clearLogs()",
+    "setUserProfile(profile)",
+    "setLastPrompt(date)"
+  ]
+}
