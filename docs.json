@@ -75,7 +75,7 @@
           {
             "group": "API Integration",
             "pages": [
-              "technical/api/open-food-facts",
+              "technical/api/usda-fooddata-central",
               "technical/api/ai-service"
             ]
           }
