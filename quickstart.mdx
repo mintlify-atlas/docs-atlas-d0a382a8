@@ -1,80 +1,195 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart Guide
+description: Get up and running with CalPal in just a few minutes - from installation to logging your first food.
 ---
 
-## Get started in three steps
-
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+Welcome to CalPal! This guide will walk you through the essential steps to start tracking your food, nutrition, and health metrics.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  This quickstart assumes you've already installed CalPal. If not, see the [Installation Guide](/installation) first.
 </Note>
+
+## Getting Started with CalPal
+
+<Steps>
+  <Step title="Launch CalPal and Grant Permissions">
+    When you first open CalPal, you'll be prompted to grant camera permissions. This is required for barcode scanning.
+    
+    **On iOS:**
+    - Tap **Allow** when prompted for camera access
+    
+    **On Android:**
+    - Tap **While using the app** or **Only this time**
+    
+    <Warning>
+      Without camera permissions, you won't be able to use the barcode scanner feature. You can still log foods manually or use AI text entry.
+    </Warning>
+  </Step>
+
+  <Step title="Set Up Your Profile">
+    CalPal will prompt you to create your user profile. This information helps calculate your BMI and track your health over time.
+    
+    **Required Information:**
+    - **Age** - Your current age in years
+    - **Height** - In feet/inches (US) or centimeters (Metric)
+    - **Weight** - In pounds (US) or kilograms (Metric)
+    - **Unit System** - Choose between US Standard or Metric
+    
+    Your BMI will be calculated automatically and displayed with color coding:
+    - 🔵 **Blue**: Underweight (BMI < 18.5)
+    - 🟢 **Green**: Normal (BMI 18.5-24.9)
+    - 🟠 **Orange**: Overweight (BMI 25-29.9)
+    - 🔴 **Red**: Obese (BMI ≥ 30)
+    
+    <Info>
+      All profile data is stored **locally on your device**. CalPal never sends your personal information to any server.
+    </Info>
+  </Step>
+
+  <Step title="Log Your First Food">
+    Now you're ready to log your first food! CalPal offers three ways to add foods:
+    
+    ### Method 1: Barcode Scanning (Recommended)
+    
+    1. Tap the **+** button in the bottom-right corner
+    2. Select **Scan Barcode**
+    3. Point your camera at the product's barcode
+    4. CalPal will automatically fetch nutritional information from the USDA database
+    5. Enter the cost when prompted
+    6. Tap **Add** to save the log
+    
+    **Supported Barcode Types:**
+    - UPC-A, UPC-E
+    - EAN-8, EAN-13
+    - Code 39, Code 128
+    - QR codes
+    
+    ### Method 2: AI Natural Language Entry
+    
+    1. Tap the **+** button
+    2. Select **Tell the AI**
+    3. Describe what you ate in plain English
+    
+    **Example inputs:**
+    ```
+    "a chicken burrito bowl with rice and beans, plus a coke"
+    "large pepperoni pizza from dominos, 3 slices"
+    "grilled salmon with broccoli and quinoa"
+    "starbucks grande caramel latte with oat milk"
+    ```
+    
+    The AI will automatically extract:
+    - Food name
+    - Estimated cost
+    - Calories
+    - Protein, carbs, and fat content
+    
+    <Tip>
+      Be specific! Mention portion sizes, cooking methods, and brands for more accurate nutritional estimates.
+    </Tip>
+    
+    ### Method 3: Manual Entry
+    
+    1. Tap the **+** button
+    2. Select **Add Food Manually**
+    3. Fill in the food details:
+       - **Name** (required)
+       - **Cost** (required)
+       - **Weight/Serving Size** (optional)
+       - **Calories** (optional)
+       - **Protein** (optional)
+       - **Carbs** (optional)
+       - **Fat** (optional)
+    4. Tap **Save**
+    
+    <Info>
+      You can edit or delete any food log by tapping the ⋯ menu on the food card.
+    </Info>
+  </Step>
+
+  <Step title="View Your Dashboard">
+    After logging your first food, you'll see it appear on your **Home** screen dashboard.
+    
+    The dashboard shows:
+    - **Summary stats** for your selected time period (1D, 1W, 1M, All)
+    - **Total spending** on food
+    - **Estimated weight change** based on calories
+    - **Total calories, fat, carbs, and protein**
+    - **Recent days** with quick date navigation
+    - **Food logs** grouped by day
+    
+    Toggle between time frames to see different views:
+    - **1D** - Last 24 hours
+    - **1W** - Last 7 days
+    - **1M** - Last 30 days
+    - **All** - All-time data
+  </Step>
+
+  <Step title="Explore Analytics">
+    Navigate to the **Analytics** tab (third icon in the bottom navigation) to see:
+    
+    - **Weight over time** - Interactive chart showing your weight/BMI history
+    - **Tips for healthy eating** - Personalized recommendations
+    - **Time period filters** - View data for 1 week, 1 month, 1 year, or all time
+    
+    <Tip>
+      Update your weight weekly through the Profile screen to see accurate weight trends over time!
+    </Tip>
+  </Step>
+</Steps>
+
+## Next Steps
+
+Now that you've logged your first food and explored the dashboard, here are some features to try:
+
+<CardGroup cols={2}>
+  <Card title="Restaurant Menus" icon="store" href="/features/restaurant-menus">
+    Browse McDonald's and Chick-fil-A menus with nutritional filters.
+  </Card>
+  
+  <Card title="Health Tracking" icon="heartbeat" href="/features/health-tracking">
+    Learn how to track your weight, BMI, and health metrics over time.
+  </Card>
+  
+  <Card title="Data Privacy" icon="shield" href="/guides/data-privacy">
+    Understand how CalPal keeps your data private with local-first storage.
+  </Card>
+  
+  <Card title="User Profile" icon="user" href="/guides/user-profile">
+    Customize your profile settings and track your progress.
+  </Card>
+</CardGroup>
+
+## Tips for Success
+
+<AccordionGroup>
+  <Accordion title="Log consistently for best results">
+    Try to log every food item you consume, even small snacks. Consistency is key to understanding your eating patterns and making informed decisions about your nutrition.
+  </Accordion>
+  
+  <Accordion title="Update your weight weekly">
+    CalPal prompts you to update your weight and height every 7 days. This helps maintain accurate BMI trends and weight change calculations.
+  </Accordion>
+  
+  <Accordion title="Use barcode scanning when possible">
+    Barcode scanning provides the most accurate nutritional data since it pulls from the USDA FoodData Central database. Reserve manual entry for homemade foods or items without barcodes.
+  </Accordion>
+  
+  <Accordion title="Review your analytics regularly">
+    Check the Analytics tab weekly to spot trends in your spending, calorie intake, and macro distribution. Use these insights to adjust your eating habits.
+  </Accordion>
+  
+  <Accordion title="Explore restaurant menus before ordering">
+    Use the Restaurant Menus feature to compare nutritional options before placing an order. Filter by calories and protein to find meals that fit your goals.
+  </Accordion>
+</AccordionGroup>
+
+## Need Help?
+
+<Card title="Installation Guide" icon="download" href="/installation">
+  Having trouble installing CalPal? Check out the full installation guide for detailed setup instructions.
+</Card>
+
+---
+
+You're all set! Start logging your meals and tracking your health with CalPal.

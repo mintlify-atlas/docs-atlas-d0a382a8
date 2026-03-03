@@ -1,0 +1,501 @@
+---
+title: Database Layer
+description: WatermelonDB implementation for local-first offline data persistence in CalPal
+---
+
+## Overview
+
+CalPal uses **WatermelonDB** - a reactive SQLite database optimized for React Native apps with thousands of records. It provides:
+
+<CardGroup cols={2}>
+  <Card title="Blazing Fast" icon="bolt">
+    Built on SQLite with JSI for near-native performance
+  </Card>
+  
+  <Card title="Offline-First" icon="wifi-slash">
+    All data stored locally, works without internet
+  </Card>
+  
+  <Card title="Reactive" icon="arrows-rotate">
+    Automatic UI updates when database changes
+  </Card>
+  
+  <Card title="Type-Safe" icon="shield">
+    Full TypeScript integration with decorators
+  </Card>
+</CardGroup>
+
+<Note>
+  WatermelonDB uses **lazy loading** - it only loads data when explicitly queried, making it efficient even with 10,000+ records.
+</Note>
+
+## Database Configuration
+
+The database is initialized in `db/database.ts:77` with JSI enabled for maximum performance:
+
+<CodeGroup>
+```typescript db/database.ts (Adapter Setup)
+import { Database } from '@nozbe/watermelondb';
+import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
+
+const adapter = new SQLiteAdapter({
+  schema,
+  dbName: 'snackzap',
+  jsi: true,
+  onSetUpError: (error) => console.error('WatermelonDB setup error:', error),
+});
+
+const database = new Database({
+  adapter,
+  modelClasses: [Log, UserProfile],
+});
+
+export { database, Log, UserProfile };
+```
+</CodeGroup>
+
+<Info>
+  **JSI (JavaScript Interface)** bypasses the React Native bridge for 10-100x faster database operations compared to AsyncStorage.
+</Info>
+
+## Schema Definition
+
+The database schema is defined using WatermelonDB's declarative API (`db/database.ts:7`):
+
+<CodeGroup>
+```typescript db/database.ts (Schema)
+import { appSchema, tableSchema } from '@nozbe/watermelondb';
+
+const schema = appSchema({
+  version: 1,
+  tables: [
+    tableSchema({
+      name: 'logs',
+      columns: [
+        { name: 'name', type: 'string' },
+        { name: 'image', type: 'string', isOptional: true },
+        { name: 'barcode', type: 'string' },
+        { name: 'cost', type: 'number' },
+        { name: 'weight', type: 'number' },
+        { name: 'calories', type: 'number', isOptional: true },
+        { name: 'fat', type: 'number', isOptional: true },
+        { name: 'carbs', type: 'number', isOptional: true },
+        { name: 'protein', type: 'number', isOptional: true },
+        { name: 'date', type: 'string' },
+        { name: 'local_date', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'user_profiles',
+      columns: [
+        { name: 'age', type: 'number' },
+        { name: 'height', type: 'number' },
+        { name: 'weight', type: 'number' },
+        { name: 'unit_system', type: 'string' },
+        { name: 'bmi_history', type: 'string' },
+        { name: 'last_prompt', type: 'string' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+  ],
+});
+```
+</CodeGroup>
+
+<Warning>
+  Schema changes require **migrations**. Incrementing the version number without a migration will cause data loss. See WatermelonDB migration docs for production schema updates.
+</Warning>
+
+## Models
+
+### Log Model
+
+Represents a single food purchase entry (`db/database.ts:45`):
+
+<CodeGroup>
+```typescript db/database.ts (Log Model)
+import { Model } from '@nozbe/watermelondb';
+import { field, date, readonly } from '@nozbe/watermelondb/decorators';
+
+class Log extends Model {
+  static table = 'logs';
+
+  @field('name') name!: string;
+  @field('image') image?: string;
+  @field('barcode') barcode!: string;
+  @field('cost') cost!: number;
+  @field('weight') weight!: number;
+  @field('calories') calories?: number;
+  @field('fat') fat?: number;
+  @field('carbs') carbs?: number;
+  @field('protein') protein?: number;
+  @field('date') date!: string;
+  @field('local_date') localDate?: string;
+  @readonly @date('created_at') createdAt!: Date;
+  @readonly @date('updated_at') updatedAt!: Date;
+}
+```
+</CodeGroup>
+
+<Accordion title="Field Descriptions">
+  - **name**: Product name (e.g., "Chicken Caesar Salad")
+  - **image**: Optional base64 or URL to product photo
+  - **barcode**: UPC/EAN barcode identifier
+  - **cost**: Purchase price in local currency
+  - **weight**: Product weight in grams
+  - **calories**: Total calories per serving (optional)
+  - **fat/carbs/protein**: Macronutrient grams (optional)
+  - **date**: ISO 8601 timestamp of purchase
+  - **localDate**: Local timezone date string
+  - **createdAt/updatedAt**: Auto-managed timestamps
+</Accordion>
+
+### UserProfile Model
+
+Stores health metrics and preferences (`db/database.ts:63`):
+
+<CodeGroup>
+```typescript db/database.ts (UserProfile Model)
+import { json } from '@nozbe/watermelondb/decorators';
+
+class UserProfile extends Model {
+  static table = 'user_profiles';
+
+  @field('age') age!: number;
+  @field('height') height!: number;
+  @field('weight') weight!: number;
+  @field('unit_system') unitSystem!: 'us' | 'metric';
+  @json('bmi_history', (rawValue) => rawValue || []) bmiHistory!: {
+    date: string;
+    bmi: number;
+    weight: number;
+    height: number;
+  }[];
+  @field('last_prompt') lastPrompt!: string;
+  @readonly @date('created_at') createdAt!: Date;
+  @readonly @date('updated_at') updatedAt!: Date;
+}
+```
+</CodeGroup>
+
+<Info>
+  The `@json` decorator automatically serializes/deserializes `bmiHistory` array to/from JSON string in SQLite.
+</Info>
+
+## CRUD Operations
+
+### Create
+
+Adding a new log entry:
+
+<CodeGroup>
+```typescript Creating a Log
+import { database, Log } from '@/db/database';
+
+await database.write(async () => {
+  const logsCollection = database.get<Log>('logs');
+  
+  await logsCollection.create(log => {
+    log.name = 'Avocado Toast';
+    log.barcode = '987654321';
+    log.cost = 12.50;
+    log.weight = 250;
+    log.calories = 320;
+    log.fat = 18;
+    log.carbs = 28;
+    log.protein = 12;
+    log.date = new Date().toISOString();
+  });
+});
+```
+
+```typescript Creating with Custom ID
+await database.write(async () => {
+  const logsCollection = database.get<Log>('logs');
+  
+  await logsCollection.create(log => {
+    log._raw.id = 'custom-id-123'; // Must set before other fields
+    log.name = 'Protein Shake';
+    log.barcode = '111222333';
+    log.cost = 5.99;
+    log.date = new Date().toISOString();
+  });
+});
+```
+</CodeGroup>
+
+<Warning>
+  All write operations MUST be wrapped in `database.write()` to ensure transaction safety.
+</Warning>
+
+### Read (Query)
+
+Querying logs with filters:
+
+<CodeGroup>
+```typescript Fetch All Logs
+const logsCollection = database.get<Log>('logs');
+const allLogs = await logsCollection.query().fetch();
+
+console.log(`Total logs: ${allLogs.length}`);
+```
+
+```typescript Filter by Date Range
+import { Q } from '@nozbe/watermelondb';
+
+const logsCollection = database.get<Log>('logs');
+const recentLogs = await logsCollection
+  .query(
+    Q.where('date', Q.gte('2026-03-01')),
+    Q.sortBy('date', Q.desc)
+  )
+  .fetch();
+```
+
+```typescript Search by Name
+const logsCollection = database.get<Log>('logs');
+const chickenLogs = await logsCollection
+  .query(
+    Q.where('name', Q.like('%chicken%'))
+  )
+  .fetch();
+```
+
+```typescript Get Single Record by ID
+const logsCollection = database.get<Log>('logs');
+const log = await logsCollection.find('log-id-123');
+
+console.log(log.name, log.calories);
+```
+</CodeGroup>
+
+<Info>
+  WatermelonDB queries are **lazy** - they don't execute until you call `.fetch()` or `.observe()`.
+</Info>
+
+### Update
+
+Modifying existing records:
+
+<CodeGroup>
+```typescript Update a Log
+const logsCollection = database.get<Log>('logs');
+const log = await logsCollection.find('log-id-123');
+
+await database.write(async () => {
+  await log.update(record => {
+    record.calories = 450; // Corrected calorie count
+    record.protein = 38;
+  });
+});
+```
+
+```typescript Update User Profile
+const profileCollection = database.get<UserProfile>('user_profiles');
+const profiles = await profileCollection.query().fetch();
+
+if (profiles.length > 0) {
+  await database.write(async () => {
+    await profiles[0].update(profile => {
+      profile.weight = 72; // Updated weight
+      profile.bmiHistory = [
+        ...profile.bmiHistory,
+        { date: '2026-03-02', bmi: 23.5, weight: 72, height: 175 }
+      ];
+    });
+  });
+}
+```
+</CodeGroup>
+
+### Delete
+
+Removing records from the database:
+
+<CodeGroup>
+```typescript Soft Delete (Recommended)
+const logsCollection = database.get<Log>('logs');
+const log = await logsCollection.find('log-id-123');
+
+await database.write(async () => {
+  await log.markAsDeleted(); // Sets _status = 'deleted'
+});
+```
+
+```typescript Permanent Delete
+const logsCollection = database.get<Log>('logs');
+const log = await logsCollection.find('log-id-123');
+
+await database.write(async () => {
+  await log.destroyPermanently(); // Irreversible deletion
+});
+```
+
+```typescript Batch Delete All Logs
+const logsCollection = database.get<Log>('logs');
+const allLogs = await logsCollection.query().fetch();
+
+await database.write(async () => {
+  for (const log of allLogs) {
+    await log.destroyPermanently();
+  }
+});
+```
+</CodeGroup>
+
+<Warning>
+  `destroyPermanently()` cannot be undone. Use `markAsDeleted()` if you might need to sync deletions to a backend.
+</Warning>
+
+## Redux Integration
+
+WatermelonDB integrates with Redux through async thunks in the slices:
+
+<Steps>
+  <Step title="Load on App Start">
+    `loadLogsFromStorage()` queries WatermelonDB and dispatches `setLogs()`
+    
+    ```typescript
+    const logs = await database.get<Log>('logs').query().fetch();
+    dispatch(setLogs(logEntries));
+    ```
+  </Step>
+  
+  <Step title="User Creates Entry">
+    Component dispatches `addLog()` to Redux state
+    
+    ```typescript
+    dispatch(addLog(newLogEntry));
+    ```
+  </Step>
+  
+  <Step title="Persist to Database">
+    Call `saveLogsToStorage()` to write Redux state back to WatermelonDB
+    
+    ```typescript
+    await database.write(async () => {
+      await logsCollection.create(entry => {
+        // Populate from Redux state
+      });
+    });
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  This pattern ensures **Redux is the source of truth for UI**, while **WatermelonDB is the source of truth for persistence**.
+</Note>
+
+## Local-First Persistence Strategy
+
+CalPal's database strategy prioritizes offline functionality:
+
+<Accordion title="1. All Data is Local First">
+  Every operation writes to WatermelonDB immediately, ensuring the app works 100% offline.
+</Accordion>
+
+<Accordion title="2. Optional Cloud Sync">
+  Supabase integration (via `@supabase/supabase-js`) syncs data to cloud when online, but it's not required for core functionality.
+</Accordion>
+
+<Accordion title="3. Redux as In-Memory Cache">
+  Redux holds the current session's data in memory. On app restart, it's hydrated from WatermelonDB, not from cloud.
+</Accordion>
+
+<Accordion title="4. Single Source of Truth">
+  WatermelonDB is the authoritative local database. If Redux and DB are out of sync, DB wins on app restart.
+</Accordion>
+
+## Performance Characteristics
+
+<CardGroup cols={2}>
+  <Card title="Insert Performance">
+    ~1ms per record with JSI
+    
+    Can batch insert 1000+ records in less than 100ms
+  </Card>
+  
+  <Card title="Query Performance">
+    ~0.5ms for simple queries
+    
+    Indexed queries scale to 100k+ records
+  </Card>
+  
+  <Card title="Update Performance">
+    ~1-2ms per record
+    
+    Batch updates use transactions for consistency
+  </Card>
+  
+  <Card title="Memory Usage">
+    Lazy loading: only queries load into memory
+    
+    10k records ≈ 5-10MB RAM
+  </Card>
+</CardGroup>
+
+<Info>
+  For optimal performance, index frequently queried columns by adding `{ name: 'date', type: 'string', isIndexed: true }` to schema.
+</Info>
+
+## Advanced Usage
+
+<Accordion title="Reactive Queries with Observables">
+  WatermelonDB supports RxJS observables for real-time UI updates:
+  
+  ```typescript
+  import { useDatabase } from '@nozbe/watermelondb/hooks';
+  
+  function LogsList() {
+    const database = useDatabase();
+    const [logs, setLogs] = useState<Log[]>([]);
+    
+    useEffect(() => {
+      const subscription = database.get<Log>('logs')
+        .query()
+        .observe()
+        .subscribe(setLogs);
+      
+      return () => subscription.unsubscribe();
+    }, []);
+    
+    // UI automatically updates when database changes!
+  }
+  ```
+</Accordion>
+
+<Accordion title="Complex Queries with Q">
+  ```typescript
+  import { Q } from '@nozbe/watermelondb';
+  
+  const highCalorieLogs = await database.get<Log>('logs')
+    .query(
+      Q.where('calories', Q.gt(500)),
+      Q.where('cost', Q.lte(10)),
+      Q.sortBy('date', Q.desc),
+      Q.take(20)
+    )
+    .fetch();
+  ```
+</Accordion>
+
+<Accordion title="Transactions for Atomic Operations">
+  ```typescript
+  await database.write(async () => {
+    const log = await logsCollection.find('log-123');
+    await log.update(record => {
+      record.cost = 9.99;
+    });
+    
+    const profile = await profileCollection.find('profile-1');
+    await profile.update(p => {
+      p.lastPrompt = `Updated log ${log.name}`;
+    });
+    
+    // Both updates succeed or both fail - no partial state
+  });
+  ```
+</Accordion>

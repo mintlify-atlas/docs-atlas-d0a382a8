@@ -1,0 +1,202 @@
+---
+title: 'Data Privacy & Security'
+description: 'Understanding how CalPal protects your personal health data with a local-first architecture'
+---
+
+## Local-First Privacy
+
+CalPal is built with your privacy as the top priority. Unlike many health and nutrition apps, **CalPal stores all your data locally on your device** and never transmits it to external servers.
+
+<Note>
+  **100% Local Storage**: Your food logs, nutrition data, photos, and personal health information never leave your device.
+</Note>
+
+## How CalPal Stores Your Data
+
+CalPal uses **WatermelonDB**, a high-performance local database built on SQLite, to store all your information directly on your mobile device.
+
+### Database Architecture
+
+The app uses a SQLite database named `snackzap` (see `db/database.ts:79`) with JSI (JavaScript Interface) enabled for optimal performance:
+
+```typescript
+const adapter = new SQLiteAdapter({
+  schema,
+  dbName: 'snackzap',
+  jsi: true,
+  onSetUpError: (error) => console.error('WatermelonDB setup error:', error),
+});
+```
+
+<Info>
+  WatermelonDB is a reactive database framework optimized for React Native apps. It provides fast queries and efficient storage without requiring any cloud infrastructure.
+</Info>
+
+### What Data is Stored Locally
+
+CalPal maintains two main data collections on your device:
+
+<Accordion title="Food Logs Collection">
+  The `logs` table stores all your scanned food items:
+  
+  - **Product Information**: Name, barcode, image
+  - **Cost Data**: Purchase price
+  - **Nutrition Facts**: Calories, fat, carbs, protein, weight
+  - **Timestamps**: Date scanned, created/updated timestamps
+  
+  Every scan you perform is stored locally in this table (see `db/database.ts:10-27`).
+</Accordion>
+
+<Accordion title="User Profile Collection">
+  The `user_profiles` table stores your personal health data:
+  
+  - **Physical Stats**: Age, height, weight
+  - **Preferences**: Unit system (US or Metric)
+  - **Health History**: BMI history with timestamps
+  - **Tracking Data**: Last update timestamp
+  
+  Your profile is stored with full history tracking (see `db/database.ts:28-40`).
+</Accordion>
+
+## No External Data Transmission
+
+<Warning>
+  CalPal **does not send any data** to remote servers, cloud storage, or third-party analytics services.
+</Warning>
+
+### What This Means:
+
+- **No user accounts**: You don't need to create an account or log in
+- **No cloud sync**: Data stays on your device only
+- **No data sharing**: Your information is never sold or shared with third parties
+- **No analytics tracking**: Your usage patterns and health data are completely private
+- **Offline-first**: The app works fully offline since it doesn't require server connectivity
+
+### Data Access
+
+The only entity with access to your CalPal data is **you**, through your device. The data is stored in your device's local storage and protected by your device's security features:
+
+- Device encryption (if enabled on your device)
+- Device lock screen protection
+- App sandboxing provided by iOS/Android
+
+<Note>
+  Since data is stored locally, make sure to protect your device with a strong passcode and enable device encryption for maximum security.
+</Note>
+
+## How CalPal Loads Your Data
+
+When you open the app, your profile is loaded from WatermelonDB into Redux state for fast access:
+
+```typescript
+// From store/userProfileSlice.ts:53-71
+export const loadUserProfileFromStorage = () => async (dispatch: any) => {
+  try {
+    const profileCollection = database.get<UserProfile>('user_profiles');
+    const profiles = await profileCollection.query().fetch();
+    if (profiles.length > 0) {
+      const profile = profiles[0];
+      dispatch(setUserProfile({
+        age: profile.age,
+        height: profile.height,
+        weight: profile.weight,
+        unitSystem: profile.unitSystem,
+        bmiHistory: profile.bmiHistory,
+        lastPrompt: profile.lastPrompt,
+      }));
+    }
+  } catch (error) {
+    console.error('Error loading user profile from WatermelonDB:', error);
+  }
+};
+```
+
+This function reads from your local database only - no network requests are made.
+
+## Clearing Your Data
+
+You have complete control over your data. CalPal provides an easy way to clear all stored information if needed.
+
+<Steps>
+  <Step title="Navigate to Profile">
+    Open the **Profile** tab from the bottom navigation.
+  </Step>
+  
+  <Step title="Find Clear Data Option">
+    Scroll down to find the **Clear All Data** button in the settings section.
+  </Step>
+  
+  <Step title="Confirm Deletion">
+    Tap **Clear All Data** and confirm when prompted.
+  </Step>
+  
+  <Step title="Data Wiped">
+    All your food logs, nutrition data, photos, and profile information will be permanently deleted from your device. The app will restart with a clean slate.
+  </Step>
+</Steps>
+
+<Warning>
+  **This action cannot be undone**. Since CalPal doesn't back up your data to the cloud, clearing your data will permanently delete it. There is no way to recover it.
+</Warning>
+
+### What Gets Deleted
+
+When you clear all data (see `app/(tabs)/profile.tsx:108-123`), the app performs:
+
+1. **Database reset**: `database.unsafeResetDatabase()` wipes all WatermelonDB tables
+2. **Redux reset**: Your in-memory state is cleared
+3. **Fresh start**: The app returns to its initial state as if newly installed
+
+## Privacy Benefits of Local Storage
+
+Choosing a local-first app like CalPal offers several advantages:
+
+<AccordionGroup>
+  <Accordion title="Complete Data Control">
+    You own your data completely. It's stored on your device and you can delete it anytime without requesting access from a company.
+  </Accordion>
+  
+  <Accordion title="No Data Breaches">
+    Since your data never leaves your device, it can't be exposed in a server breach or data leak.
+  </Accordion>
+  
+  <Accordion title="No Privacy Policy Concerns">
+    You don't need to worry about terms of service changes, data retention policies, or third-party data sharing.
+  </Accordion>
+  
+  <Accordion title="Works Offline">
+    All features work without an internet connection since nothing relies on cloud services.
+  </Accordion>
+  
+  <Accordion title="Fast Performance">
+    Reading from local storage is much faster than network requests, making the app more responsive.
+  </Accordion>
+  
+  <Accordion title="No Subscription Required">
+    Without cloud infrastructure costs, the app doesn't need to charge for data storage or sync.
+  </Accordion>
+</AccordionGroup>
+
+## Device Migration Considerations
+
+<Note>
+  Because CalPal stores data locally, your information **will not automatically transfer** to a new device.
+</Note>
+
+If you get a new phone:
+- Your CalPal data stays on your old device
+- You'll start fresh on your new device
+- This is a tradeoff for the privacy and security benefits of local storage
+
+For users who need data portability, future versions may include manual export/import features while maintaining the local-first architecture.
+
+## Technical Implementation
+
+For developers interested in the technical details, CalPal's data privacy is implemented through:
+
+- **WatermelonDB**: Local reactive database with SQLite backend (`@nozbe/watermelondb`)
+- **Redux Toolkit**: In-memory state management for active data
+- **No network layer**: No API calls, fetch requests, or cloud SDKs for user data
+- **Decorators**: Type-safe field definitions using `@field`, `@json`, `@date` decorators
+
+See `db/database.ts` for the complete schema and model definitions.

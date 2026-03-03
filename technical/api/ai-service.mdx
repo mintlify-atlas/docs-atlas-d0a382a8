@@ -1,0 +1,332 @@
+---
+title: "Cloudflare Workers AI Service"
+description: "Integration with Cloudflare Workers AI for intelligent food entry parsing from text descriptions"
+---
+
+## Overview
+
+CalPal uses a **Cloudflare Workers AI** endpoint to convert natural language food descriptions into structured food entries with nutritional information. The integration includes restaurant menu context awareness for improved accuracy.
+
+## API Configuration
+
+### Endpoint
+```typescript
+const CALPAL_WORKER_URL = 'https://calpalai.rishabh-1keshri.workers.dev/food-from-text';
+```
+
+### Implementation Location
+Primary implementation: `hooks/useAI.ts`
+
+## Core Function: getFoodEntryFromText
+
+Converts a text description into a structured food entry with nutritional data.
+
+### Function Signature
+
+```typescript
+export async function getFoodEntryFromText(
+  description: string,
+  opts?: { restaurantId?: RestaurantId | null }
+): Promise<AiFoodEntry>
+```
+
+### Request Format
+
+<ParamField body="description" type="string" required>
+  Natural language description of the food item (e.g., "Big Mac with medium fries")
+</ParamField>
+
+<ParamField body="restaurantId" type="string" optional>
+  Restaurant identifier for menu context. Supported values: `mcdonalds`, `chickfila`
+</ParamField>
+
+<ParamField body="menu" type="array" optional>
+  Restaurant menu JSON array. Automatically included when `restaurantId` is provided
+</ParamField>
+
+### Example Request
+
+```typescript
+const payload = {
+  description: "Quarter Pounder with Cheese",
+  restaurantId: "mcdonalds",
+  menu: getRestaurantMenu("mcdonalds")
+};
+
+const response = await fetch(CALPAL_WORKER_URL, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+});
+```
+
+### Response Format
+
+The API returns an `AiFoodEntry` object:
+
+<ResponseField name="name" type="string" required>
+  Name of the food item (defaults to "Unknown Food" if not provided)
+</ResponseField>
+
+<ResponseField name="calories" type="number" optional>
+  Energy in kilocalories (clamped between 0-3000)
+</ResponseField>
+
+<ResponseField name="fat" type="number" optional>
+  Fat content in grams (clamped between 0-200)
+</ResponseField>
+
+<ResponseField name="carbs" type="number" optional>
+  Carbohydrate content in grams (clamped between 0-400)
+</ResponseField>
+
+<ResponseField name="protein" type="number" optional>
+  Protein content in grams (clamped between 0-200)
+</ResponseField>
+
+<ResponseField name="weight" type="number" optional>
+  Food weight in grams (clamped between 0-1500)
+</ResponseField>
+
+<ResponseField name="cost" type="number" optional>
+  Estimated cost in dollars (clamped between 0-80)
+</ResponseField>
+
+<ResponseField name="barcode" type="string" optional>
+  Product barcode if applicable
+</ResponseField>
+
+<ResponseField name="image" type="string" optional>
+  URL to product image if available
+</ResponseField>
+
+### Type Definition
+
+```typescript
+export type AiFoodEntry = {
+  name: string;
+  barcode?: string;
+  image?: string;
+  cost?: number;
+  weight?: number;
+  calories?: number;
+  fat?: number;
+  carbs?: number;
+  protein?: number;
+};
+```
+
+## Restaurant Menu Context
+
+### Supported Restaurants
+
+CalPal maintains a registry of restaurant menus for context-aware parsing:
+
+```typescript
+export const RESTAURANT_MENUS: Record<RestaurantId, any[]> = {
+  mcdonalds: mcdonaldsMenu as any[],
+  chickfila: chickfilaMenu as any[],
+};
+```
+
+<ParamField name="mcdonalds" type="array">
+  McDonald's menu data from `assets/restaurants/mcdonalds.json`
+</ParamField>
+
+<ParamField name="chickfila" type="array">
+  Chick-fil-A menu data from `assets/restaurants/chickfila.json`
+</ParamField>
+
+### Restaurant Type
+
+```typescript
+export type RestaurantId = 'mcdonalds' | 'chickfila' | string;
+```
+
+### Menu Helper Function
+
+```typescript
+export function getRestaurantMenu(restaurantId?: RestaurantId | null): any[] {
+  if (!restaurantId) return [];
+  const menu = RESTAURANT_MENUS[restaurantId];
+  if (!Array.isArray(menu)) return [];
+  return menu;
+}
+```
+
+Returns the menu JSON for a given restaurant, or an empty array if not found.
+
+## Usage Example
+
+### Basic Text Parsing
+
+```typescript
+import { getFoodEntryFromText } from '@/hooks/useAI';
+
+// Parse generic food description
+const entry = await getFoodEntryFromText("grilled chicken breast with rice");
+console.log(entry);
+// {
+//   name: "Grilled Chicken Breast with Rice",
+//   calories: 450,
+//   protein: 45,
+//   carbs: 50,
+//   fat: 8,
+//   ...
+// }
+```
+
+### Restaurant Context
+
+```typescript
+// Parse with McDonald's menu context
+const entry = await getFoodEntryFromText(
+  "Big Mac meal with large fries",
+  { restaurantId: 'mcdonalds' }
+);
+```
+
+Providing restaurant context improves accuracy by:
+- Matching against known menu items
+- Using official nutritional data when available
+- Understanding restaurant-specific naming conventions
+
+## Data Validation & Normalization
+
+CalPal applies several validation and normalization steps to AI responses:
+
+### Number Parsing
+
+Handles various numeric formats including strings with units:
+
+```typescript
+function parseNumber(value: any): number | undefined {
+  if (value == null) return undefined;
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return undefined;
+  const m = value.match(/-?\d+(\.\d+)?/);
+  return m ? Number(m[0]) : undefined;
+}
+```
+
+Supports inputs like:
+- `"780 kcal"` → `780`
+- `"45 g"` → `45`
+- `780` → `780`
+
+### Range Clamping
+
+Ensures nutritional values are within reasonable bounds:
+
+```typescript
+function clamp(value: number | undefined, min: number, max: number): number | undefined {
+  if (value == null || Number.isNaN(value)) return undefined;
+  return Math.min(max, Math.max(min, value));
+}
+```
+
+### Normalization Function
+
+The complete normalization pipeline:
+
+```typescript
+function normaliseFoodResult(raw: any): AiFoodEntry {
+  const calories = clamp(parseNumber(raw.calories), 0, 3000);
+  const weight = clamp(parseNumber(raw.weight), 0, 1500);
+  const fat = clamp(parseNumber(raw.fat), 0, 200);
+  const carbs = clamp(parseNumber(raw.carbs), 0, 400);
+  const protein = clamp(parseNumber(raw.protein), 0, 200);
+  const cost = clamp(parseNumber(raw.cost), 0, 80);
+
+  return {
+    name: raw.name || 'Unknown Food',
+    barcode: raw.barcode || '',
+    image: raw.image || '',
+    cost: cost ?? 0,
+    weight: weight ?? 0,
+    calories: calories ?? 0,
+    fat: fat ?? 0,
+    carbs: carbs ?? 0,
+    protein: protein ?? 0,
+  };
+}
+```
+
+### Validation Ranges
+
+| Field | Min | Max | Unit |
+|-------|-----|-----|------|
+| calories | 0 | 3000 | kcal |
+| weight | 0 | 1500 | g |
+| fat | 0 | 200 | g |
+| carbs | 0 | 400 | g |
+| protein | 0 | 200 | g |
+| cost | 0 | 80 | USD |
+
+## Error Handling
+
+### Empty Description
+
+```typescript
+if (!description.trim()) {
+  throw new Error('Description is empty');
+}
+```
+
+### HTTP Errors
+
+```typescript
+if (!response.ok) {
+  throw new Error(`AI service failed with status ${response.status}`);
+}
+```
+
+### Malformed Responses
+
+The normalization function handles missing or invalid data gracefully:
+- Missing fields default to `0` or empty strings
+- Invalid numbers are parsed or set to `undefined`
+- Out-of-range values are clamped to acceptable limits
+
+## Adding New Restaurants
+
+To add support for a new restaurant:
+
+1. **Create menu JSON** in `assets/restaurants/`:
+```json
+[
+  {
+    "name": "Menu Item Name",
+    "calories": 500,
+    "protein": 25,
+    "carbs": 45,
+    "fat": 20
+  }
+]
+```
+
+2. **Import menu** in `hooks/useAI.ts`:
+```typescript
+import newRestaurantMenu from '@/assets/restaurants/newrestaurant.json';
+```
+
+3. **Register in RESTAURANT_MENUS**:
+```typescript
+export const RESTAURANT_MENUS: Record<RestaurantId, any[]> = {
+  mcdonalds: mcdonaldsMenu as any[],
+  chickfila: chickfilaMenu as any[],
+  newrestaurant: newRestaurantMenu as any[], // Add here
+};
+```
+
+4. **Use the new restaurant ID**:
+```typescript
+const entry = await getFoodEntryFromText(
+  "menu item description",
+  { restaurantId: 'newrestaurant' }
+);
+```
+
+## Implementation Reference
+
+Source file: `hooks/useAI.ts:85-114`

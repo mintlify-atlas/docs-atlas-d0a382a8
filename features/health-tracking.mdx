@@ -1,0 +1,296 @@
+---
+title: Health Profile & Tracking
+description: Track your weight, height, BMI, and personal health metrics over time with complete privacy
+---
+
+CalPal's health tracking system allows you to maintain a personal health profile with weight and height tracking, BMI calculation, and historical trends - all stored locally on your device.
+
+## Your Health Profile
+
+Your profile includes:
+
+<CardGroup cols={2}>
+  <Card title="Age" icon="calendar">
+    Your age for context in health calculations
+  </Card>
+  <Card title="Height" icon="ruler-vertical">
+    Tracked in feet/inches (US) or centimeters (Metric)
+  </Card>
+  <Card title="Weight" icon="weight-scale">
+    Tracked in pounds (US) or kilograms (Metric)
+  </Card>
+  <Card title="BMI" icon="chart-line">
+    Automatically calculated from height and weight
+  </Card>
+</CardGroup>
+
+## Initial Profile Setup
+
+When you first open CalPal, you'll be prompted to create your profile:
+
+<Steps>
+  <Step title="Choose Unit System">
+    Select between **US Standard** (ft/in, lbs) or **Metric** (cm, kg) units.
+  </Step>
+  
+  <Step title="Enter Age">
+    Input your current age.
+  </Step>
+  
+  <Step title="Enter Height">
+    - **US System**: Enter feet and inches in separate fields
+    - **Metric System**: Enter height in centimeters
+  </Step>
+  
+  <Step title="Enter Weight">
+    - **US System**: Enter weight in pounds
+    - **Metric System**: Enter weight in kilograms
+  </Step>
+  
+  <Step title="Review BMI">
+    Your BMI is calculated automatically and displayed with a color-coded indicator.
+  </Step>
+  
+  <Step title="Save Profile">
+    Tap **Save** to create your profile and start tracking.
+  </Step>
+</Steps>
+
+<Info>
+Your profile is required to use CalPal. This ensures accurate health tracking and enables personalized insights.
+</Info>
+
+## Unit System Options
+
+Choose the measurement system you're most comfortable with:
+
+<Tabs>
+  <Tab title="US Standard">
+    - Height: Feet and inches
+    - Weight: Pounds (lbs)
+    - BMI: Calculated using standard formula
+    
+    Example: 5 ft 10 in, 180 lbs → BMI 25.8
+  </Tab>
+  
+  <Tab title="Metric">
+    - Height: Centimeters
+    - Weight: Kilograms
+    - BMI: Calculated using standard formula
+    
+    Example: 178 cm, 82 kg → BMI 25.9
+  </Tab>
+</Tabs>
+
+<Note>
+Both systems use the same BMI calculation formula: weight (kg) / (height (m))². Conversions are handled automatically.
+</Note>
+
+## BMI Calculation & Color Coding
+
+Your BMI (Body Mass Index) is automatically calculated and color-coded:
+
+| BMI Range | Category | Color | Indicator |
+|-----------|----------|-------|-----------|
+| < 18.5 | Underweight | Blue 🔵 | - |
+| 18.5 - 24.9 | Healthy Weight | Green 🟢 | - |
+| 25.0 - 29.9 | Overweight | Orange 🟠 | - |
+| ≥ 30.0 | Obese | Red 🔴 | "time to lock in and get the dream body!" |
+
+<Warning>
+BMI is a general indicator and doesn't account for muscle mass, bone density, or body composition. Consult a healthcare professional for personalized health advice.
+</Warning>
+
+## Viewing Your Profile
+
+Access your profile anytime from the **Profile** tab:
+
+```text
+👤 Profile Icon
+
+Age: 25
+Height: 5 ft 10 in
+Weight: 180 lbs
+BMI: 25.8
+```
+
+<Info>
+All measurements are displayed in your chosen unit system. You can switch between US and Metric at any time when editing your profile.
+</Info>
+
+## Updating Your Profile
+
+You can update your profile information at any time:
+
+<Steps>
+  <Step title="Open Profile Tab">
+    Navigate to the Profile tab from the bottom navigation.
+  </Step>
+  
+  <Step title="Tap Edit">
+    Tap the **Edit** button below your profile information.
+  </Step>
+  
+  <Step title="Modify Fields">
+    Update any fields you want to change. You can also switch between US and Metric units.
+  </Step>
+  
+  <Step title="Save Changes">
+    Tap **Save** to update your profile. A new BMI history entry is created automatically.
+  </Step>
+</Steps>
+
+## BMI History Tracking
+
+Every time you update your profile, CalPal records:
+
+- **Date/Time** of the update
+- **Weight** at that time
+- **Height** at that time
+- **Calculated BMI**
+
+This creates a historical record you can view on the Analytics screen.
+
+<Tip>
+Update your profile weekly to track trends over time. CalPal will remind you if it's been more than 7 days since your last update.
+</Tip>
+
+## Weekly Update Prompts
+
+CalPal includes a smart reminder system:
+
+- If you haven't updated your profile in **7 days**, you'll see a prompt
+- The prompt asks: "Would you like to log your current weight and height?"
+- You can choose **Yes** to update or **No** to dismiss
+- The prompt won't appear again for another 7 days
+
+<Note>
+Weekly prompts help you maintain consistent tracking without being annoying. You're always in control of when you update.
+</Note>
+
+## Viewing BMI History
+
+See your BMI trends over time on the **Analytics** tab:
+
+<Steps>
+  <Step title="Navigate to Analytics">
+    Tap the Analytics tab in the bottom navigation.
+  </Step>
+  
+  <Step title="Open Weight Over Time">
+    Expand the "Weight Over Time" collapsible section.
+  </Step>
+  
+  <Step title="Select Time Range">
+    Choose from:
+    - **1W** - Last 7 days
+    - **1M** - Last 30 days
+    - **1Y** - Last 365 days
+    - **ALL** - Complete history
+  </Step>
+  
+  <Step title="View Chart">
+    An interactive line chart shows your weight trends. Tap data points to see exact values.
+  </Step>
+</Steps>
+
+### Interactive Chart Features
+
+- **Tap data points** to see exact date, weight, and BMI
+- **Color-coded line** matches your BMI category
+- **Responsive scaling** adjusts to your data range
+- **Date labels** show when each measurement was taken
+
+<Tip>
+The chart requires at least 2 data points. Keep updating your profile weekly to see meaningful trends.
+</Tip>
+
+## Privacy & Data Storage
+
+<Info>
+Your health data is **100% private** and stored locally on your device using AsyncStorage and WatermelonDB. CalPal never sends your personal health information to external servers.
+</Info>
+
+### What's Stored Locally
+
+- Age, height, weight, unit preference
+- Complete BMI history with timestamps
+- Last prompt date for weekly reminders
+
+Notice at the bottom of the profile editor:
+
+> "No data is stored or sent anywhere. Everything is stored locally."
+
+## Clearing Your Data
+
+If you want to start fresh:
+
+<Warning>
+Clearing your data is permanent and cannot be undone. This will delete your profile, all food logs, and BMI history.
+</Warning>
+
+<Steps>
+  <Step title="Open Profile Tab">
+    Navigate to the Profile screen.
+  </Step>
+  
+  <Step title="Tap Clear All Data">
+    Tap the "Clear All Data" option in the settings list.
+  </Step>
+  
+  <Step title="Confirm">
+    Confirm that you want to permanently delete all data.
+  </Step>
+  
+  <Step title="App Resets">
+    CalPal will reset to initial state and prompt you to create a new profile.
+  </Step>
+</Steps>
+
+## Tips for Effective Health Tracking
+
+<Tip>
+**Weigh Yourself Consistently** - Weigh at the same time of day (preferably morning, before eating) for accurate comparisons.
+</Tip>
+
+<Tip>
+**Track Weekly, Not Daily** - Weight fluctuates daily due to water retention, meals, etc. Weekly tracking shows real trends.
+</Tip>
+
+<Tip>
+**Combine with Food Logs** - Use CalPal's food logging to see how your eating habits affect your weight over time.
+</Tip>
+
+<Tip>
+**Take Measurements Too** - BMI doesn't tell the whole story. Consider tracking waist circumference or body fat percentage separately.
+</Tip>
+
+## Understanding Your BMI
+
+BMI is a useful screening tool, but has limitations:
+
+**BMI is helpful for:**
+- General population health screening
+- Tracking trends over time
+- Identifying potential health risks
+
+**BMI doesn't account for:**
+- Muscle mass (athletes may have high BMI but low body fat)
+- Bone density
+- Age and sex differences
+- Body fat distribution
+
+<Note>
+Use BMI as one indicator among many. Combine it with other health metrics and consult healthcare professionals for personalized guidance.
+</Note>
+
+## Health Profile in Analytics
+
+Your profile data enhances analytics features:
+
+- **Weight trends** shown alongside food intake
+- **BMI history** visualized over time
+- **Estimated weight change** calculated from calorie intake
+- **Personalized insights** (coming soon)
+
+See the [Analytics](/features/analytics) page for more details on tracking and insights.

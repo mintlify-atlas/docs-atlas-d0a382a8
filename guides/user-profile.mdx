@@ -1,0 +1,142 @@
+---
+title: 'User Profile Setup'
+description: 'Configure your personal profile for accurate health tracking and personalized nutrition insights'
+---
+
+## Overview
+
+Your CalPal user profile is the foundation for accurate health tracking. By providing your age, height, and weight, the app can calculate your BMI and track your health progress over time.
+
+<Info>
+  All profile data is stored locally on your device. CalPal never sends your personal information to external servers.
+</Info>
+
+## Initial Profile Setup
+
+Follow these steps to set up your profile when you first use CalPal:
+
+<Steps>
+  <Step title="Navigate to Profile">
+    Tap the **Profile** tab in the bottom navigation bar to access your profile screen.
+  </Step>
+  
+  <Step title="Open Edit Modal">
+    Tap the **Edit** button to open the profile editor modal.
+  </Step>
+  
+  <Step title="Choose Unit System">
+    Select your preferred measurement system:
+    - **US Standard**: Feet/inches for height, pounds for weight
+    - **Metric**: Centimeters for height, kilograms for weight
+    
+    You can switch between systems at any time without losing your data.
+  </Step>
+  
+  <Step title="Enter Your Details">
+    Fill in your personal information:
+    - **Age**: Your current age in years
+    - **Height**: 
+      - US Standard: Separate fields for feet and inches
+      - Metric: Single field for centimeters
+    - **Weight**:
+      - US Standard: Pounds (lbs)
+      - Metric: Kilograms (kg)
+  </Step>
+  
+  <Step title="Save Your Profile">
+    Tap the **Save** button to store your profile. The app will automatically calculate your BMI and add it to your tracking history.
+  </Step>
+</Steps>
+
+## Switching Between Unit Systems
+
+CalPal supports both US Standard and Metric measurements. Your data is always stored in metric units internally (centimeters and kilograms), so you can switch between systems seamlessly.
+
+<Accordion title="How unit conversion works">
+  When you switch from US to Metric or vice versa, CalPal automatically converts your stored measurements:
+  
+  - **Height conversion**: `(feet × 12 + inches) × 2.54 = cm`
+  - **Weight conversion**: `lbs × 0.453592 = kg`
+  
+  The conversion happens in the background (see `app/(tabs)/profile.tsx:54-62`), so your historical data remains accurate regardless of which unit system you're currently viewing.
+</Accordion>
+
+### To Switch Units:
+
+1. Open the profile editor by tapping **Edit**
+2. Tap either **US Standard** or **Metric** at the top of the modal
+3. The input fields will update to match your selected system
+4. Your existing measurements will be converted and displayed automatically
+
+## Updating Your Profile Weekly
+
+<Warning>
+  For accurate health tracking, update your profile weekly or whenever your weight changes significantly.
+</Warning>
+
+Regular profile updates help you:
+- Track weight trends over time
+- Monitor BMI changes
+- Get more accurate nutrition recommendations
+- Understand how your diet affects your health goals
+
+### Best Practices:
+
+- **Consistency**: Weigh yourself at the same time each week (preferably morning, after waking)
+- **Frequency**: Update at least weekly for meaningful trend data
+- **Honesty**: Accurate data leads to better insights
+
+## BMI Tracking and History
+
+Every time you update your profile, CalPal automatically calculates and stores your BMI (Body Mass Index):
+
+<Note>
+  BMI is calculated using the formula: `weight (kg) / (height (m))²`
+</Note>
+
+Your BMI history includes:
+- **Date**: When the measurement was recorded (ISO format)
+- **BMI value**: Calculated automatically
+- **Weight**: Your weight at that time
+- **Height**: Your height at that time
+
+This data is stored in the `bmiHistory` array within your profile (see `store/userProfileSlice.ts:4-9` and `app/(tabs)/profile.tsx:71-74`).
+
+<Accordion title="Understanding your BMI">
+  BMI is a useful screening tool, but it doesn't directly measure body fat:
+  
+  - **Below 18.5**: Underweight
+  - **18.5 - 24.9**: Normal weight
+  - **25.0 - 29.9**: Overweight
+  - **30.0 and above**: Obese
+  
+  Remember that BMI doesn't account for muscle mass, bone density, or body composition. Use it as one metric among many for tracking your health.
+</Accordion>
+
+## Profile Data Structure
+
+Your profile contains the following information:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `age` | Number | Your age in years |
+| `height` | Number | Height in centimeters (stored internally) |
+| `weight` | Number | Weight in kilograms (stored internally) |
+| `unitSystem` | String | Your preferred unit system (`us` or `metric`) |
+| `bmiHistory` | Array | Historical BMI entries with date, BMI, weight, and height |
+| `lastPrompt` | String | Timestamp of last profile update |
+
+<Info>
+  See `store/userProfileSlice.ts:11-18` for the complete `UserProfileData` interface definition.
+</Info>
+
+## Viewing Your Profile
+
+Your current profile information is always visible on the Profile screen:
+
+- **Age**: Displayed as entered
+- **Height**: Shown in your selected unit system
+- **Weight**: Shown in your selected unit system  
+- **BMI**: Automatically calculated and displayed with one decimal place
+
+The display values are converted from the internal metric storage to match your current unit preference (see `app/(tabs)/profile.tsx:33-46`).

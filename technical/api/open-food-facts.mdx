@@ -1,0 +1,246 @@
+---
+title: "USDA FoodData Central API"
+description: "Integration with USDA FoodData Central for barcode scanning and food product lookup"
+---
+
+## Overview
+
+CalPal integrates with the **USDA FoodData Central API** (not Open Food Facts) to provide barcode scanning and food product search functionality. This integration is primarily implemented in the `BarcodeScannerModal` component.
+
+## API Configuration
+
+### Base URL
+```typescript
+const FDC_BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
+```
+
+### Authentication
+The API requires an API key passed as a query parameter:
+```typescript
+const USDA_API_KEY = process.env.EXPO_PUBLIC_USDA_API_KEY;
+```
+
+## Barcode Lookup
+
+### Endpoint
+```
+GET /foods/search
+```
+
+### Request Format
+
+When scanning a barcode, CalPal performs a search query using the barcode as the search term:
+
+```typescript
+const handleBarcodeScanned = async (result: BarcodeScanningResult) => {
+  const barcode = String(result.data);
+  const url = `${FDC_BASE_URL}/foods/search?query=${encodeURIComponent(barcode)}&pageSize=1&dataType=Branded&api_key=${USDA_API_KEY}`;
+  const response = await fetch(url);
+  const data = await response.json();
+  // Process results...
+};
+```
+
+<ParamField query="query" type="string" required>
+  The barcode number (UPC/EAN) to search for
+</ParamField>
+
+<ParamField query="pageSize" type="number" default="1">
+  Number of results to return
+</ParamField>
+
+<ParamField query="dataType" type="string" default="Branded">
+  Type of food data to search. Options: `Branded`, `Survey (FNDDS)`, `Foundation`, `SR Legacy`
+</ParamField>
+
+<ParamField query="api_key" type="string" required>
+  Your USDA FoodData Central API key
+</ParamField>
+
+### Response Structure
+
+The API returns a `foods` array containing matching products:
+
+<ResponseField name="foods" type="array">
+  Array of food products matching the search query
+  
+  <ResponseField name="fdcId" type="number">
+    Unique FoodData Central identifier for detailed lookups
+  </ResponseField>
+  
+  <ResponseField name="description" type="string">
+    Product name/description
+  </ResponseField>
+  
+  <ResponseField name="brandOwner" type="string">
+    Brand name of the product
+  </ResponseField>
+  
+  <ResponseField name="gtinUpc" type="string">
+    The barcode (GTIN/UPC) number
+  </ResponseField>
+  
+  <ResponseField name="foodNutrients" type="array">
+    Array of nutrient information (may be limited in search results)
+  </ResponseField>
+</ResponseField>
+
+## Detailed Food Information
+
+### Endpoint
+```
+GET /food/{fdcId}
+```
+
+### Request Format
+
+To get complete nutritional information, CalPal fetches detailed data using the `fdcId`:
+
+```typescript
+const fetchFdcFoodDetails = async (fdcId: number): Promise<SearchProduct | null> => {
+  const url = `${FDC_BASE_URL}/food/${fdcId}?api_key=${USDA_API_KEY}`;
+  const response = await fetch(url);
+  const fullFood = await response.json();
+  return mapFdcFoodToSearchProduct(fullFood);
+};
+```
+
+<ParamField path="fdcId" type="number" required>
+  The FoodData Central ID from the search results
+</ParamField>
+
+<ParamField query="api_key" type="string" required>
+  Your USDA FoodData Central API key
+</ParamField>
+
+### Response Structure
+
+<ResponseField name="fdcId" type="number">
+  Unique identifier
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Product name
+</ResponseField>
+
+<ResponseField name="brandOwner" type="string">
+  Brand name
+</ResponseField>
+
+<ResponseField name="gtinUpc" type="string">
+  Barcode number
+</ResponseField>
+
+<ResponseField name="foodNutrients" type="array">
+  Complete nutrient information array
+  
+  <ResponseField name="nutrientNumber" type="string">
+    Standard nutrient identifier (e.g., "208" for calories, "203" for protein)
+  </ResponseField>
+  
+  <ResponseField name="nutrientName" type="string">
+    Name of the nutrient
+  </ResponseField>
+  
+  <ResponseField name="value" type="number">
+    Nutrient amount
+  </ResponseField>
+  
+  <ResponseField name="unitName" type="string">
+    Unit of measurement (e.g., "KCAL", "g")
+  </ResponseField>
+</ResponseField>
+
+## Nutrient Mapping
+
+CalPal extracts specific nutrients from the USDA response:
+
+```typescript
+const mapFdcNutrientsToNutritionInfo = (food: any): NutritionInfo => {
+  const nutrition: NutritionInfo = {};
+  
+  for (const n of food.foodNutrients) {
+    const name = (n.nutrientName || n.nutrient?.name || '').toLowerCase();
+    const nutrientNumber = n.nutrientNumber || n.nutrient?.number;
+    const value = n.value || n.amount;
+    const unit = (n.unitName || n.nutrient?.unitName || '').toLowerCase();
+
+    // Energy/Calories (nutrient 208)
+    if ((name.includes('energy') || nutrientNumber === '208') && unit === 'kcal') {
+      nutrition.calories = value;
+    }
+    // Protein (nutrient 203)
+    if ((name.includes('protein') || nutrientNumber === '203') && unit === 'g') {
+      nutrition.protein = value;
+    }
+    // Fat (nutrient 204)
+    if ((name === 'total lipid (fat)' || nutrientNumber === '204') && unit === 'g') {
+      nutrition.fat = value;
+    }
+    // Carbs (nutrient 205)
+    if ((name.includes('carbohydrate') || nutrientNumber === '205') && unit === 'g') {
+      nutrition.carbs = value;
+    }
+  }
+  
+  return nutrition;
+};
+```
+
+### Standard Nutrient Numbers
+
+- **208**: Energy (Calories) - in KCAL
+- **203**: Protein - in grams
+- **204**: Total Fat - in grams  
+- **205**: Carbohydrates - in grams
+
+## Text Search
+
+CalPal also supports searching for foods by name:
+
+```typescript
+const url = `${FDC_BASE_URL}/foods/search?query=${encodeURIComponent(search)}&pageSize=10&dataType=Branded,Survey (FNDDS)&api_key=${USDA_API_KEY}`;
+const response = await fetch(url);
+const data = await response.json();
+```
+
+The search implementation includes:
+- 400ms debounce to reduce API calls
+- Support for multiple data types: `Branded` and `Survey (FNDDS)`
+- Automatic fetching of detailed nutrition for each result
+
+## Error Handling
+
+CalPal implements fallback behavior for failed lookups:
+
+```typescript
+try {
+  // Fetch product data
+} catch (e) {
+  console.error('USDA barcode search error', e);
+  // Return minimal product with barcode only
+  onScanned({
+    fdcId: 0,
+    description: '',
+    brandOwner: '',
+    gtinUpc: barcode,
+    image_url: undefined,
+    nutriments: {},
+  });
+}
+```
+
+## Supported Barcode Types
+
+The barcode scanner supports multiple formats:
+- QR codes
+- EAN-13, EAN-8
+- UPC-A, UPC-E
+- Code 39, Code 93, Code 128
+- PDF417
+- Aztec
+- Data Matrix
+
+## Implementation Reference
+
+Source file: `components/BarcodeScannerModal.tsx:159-203`

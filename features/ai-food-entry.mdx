@@ -1,0 +1,210 @@
+---
+title: AI-Powered Food Entry
+description: Use natural language to log meals with automatic nutritional estimation powered by Cloudflare Workers AI
+---
+
+CalPal's AI-powered food entry feature allows you to describe what you ate in plain English, and the AI will automatically extract nutritional information and create a food log for you.
+
+## How It Works
+
+The AI feature uses **Cloudflare Workers AI** to process natural language descriptions and estimate nutritional content based on common food databases and portion sizes.
+
+<Info>
+The AI analyzes your description to identify foods, estimate portions, and calculate nutritional values including calories, protein, carbs, fat, and even estimated cost.
+</Info>
+
+## Using AI Food Entry
+
+<Steps>
+  <Step title="Open AI Input">
+    Tap the floating + button on the home screen and select **"Tell the AI"** from the menu.
+  </Step>
+  
+  <Step title="Describe Your Meal">
+    Type a natural language description of what you ate. Be as specific or casual as you like.
+  </Step>
+  
+  <Step title="Submit">
+    Tap **"Create Log"** to send your description to the AI. The app will show a loading indicator while processing.
+  </Step>
+  
+  <Step title="Review">
+    The AI will create a food log with estimated nutritional values. The entry will appear in your log history immediately.
+  </Step>
+</Steps>
+
+## Example Inputs
+
+Here are examples of natural language descriptions that work well:
+
+<CodeGroup>
+```text Simple Meal
+a chicken burrito bowl with rice and beans, plus a coke
+```
+
+```text Detailed Description
+two slices of pepperoni pizza and a side salad with ranch dressing
+```
+
+```text Breakfast
+scrambled eggs with toast and orange juice
+```
+
+```text Snack
+a protein bar and an apple
+```
+
+```text Restaurant Meal
+Big Mac with large fries from McDonald's
+```
+</CodeGroup>
+
+<Tip>
+The more specific you are about quantities ("two slices", "large", "12oz") and preparation methods, the more accurate the AI's estimates will be.
+</Tip>
+
+## What the AI Extracts
+
+The AI processes your description and returns:
+
+<CardGroup cols={2}>
+  <Card title="Food Name" icon="utensils">
+    A cleaned-up version of your description
+  </Card>
+  <Card title="Cost Estimate" icon="dollar-sign">
+    Estimated price (clamped between $0-$80)
+  </Card>
+  <Card title="Weight" icon="weight-scale">
+    Estimated weight in grams (0-1500g)
+  </Card>
+  <Card title="Calories" icon="fire">
+    Estimated calories (0-3000 kcal)
+  </Card>
+  <Card title="Protein" icon="drumstick-bite">
+    Estimated protein in grams (0-200g)
+  </Card>
+  <Card title="Carbohydrates" icon="bread-slice">
+    Estimated carbs in grams (0-400g)
+  </Card>
+  <Card title="Fat" icon="droplet">
+    Estimated fat in grams (0-200g)
+  </Card>
+</CardGroup>
+
+## Value Normalization
+
+The AI includes smart validation to ensure realistic values:
+
+- All numeric values are clamped to reasonable ranges
+- The AI can parse values like "780 kcal" or "45 g" automatically
+- Invalid or missing values default to 0
+- Total calories are limited to 3000 kcal per entry
+
+<Note>
+Value ranges are designed to catch unrealistic AI outputs while allowing for large meals and bulk food entries.
+</Note>
+
+## Restaurant Context
+
+When combined with the restaurant menu feature, the AI can use specific menu data:
+
+```javascript
+// The AI receives restaurant menu context
+{
+  "description": "Big Mac with large fries",
+  "restaurantId": "mcdonalds",
+  "menu": [...] // Full McDonald's menu with exact nutritional data
+}
+```
+
+This provides **more accurate estimates** when you mention specific restaurant items.
+
+<Tip>
+Mention the restaurant name in your description ("from McDonald's", "at Chick-fil-A") to help the AI match against known menu items.
+</Tip>
+
+## AI Processing Flow
+
+```mermaid
+graph LR
+    A[User Input] --> B[Cloudflare Worker]
+    B --> C[AI Model]
+    C --> D[Extract Nutrients]
+    D --> E[Normalize Values]
+    E --> F[Return JSON]
+    F --> G[Create Log Entry]
+```
+
+## Advantages
+
+<CardGroup cols={2}>
+  <Card title="Speed" icon="bolt">
+    Log meals in seconds with just a quick description
+  </Card>
+  <Card title="Convenience" icon="hand-sparkles">
+    No need to look up nutrition labels or weigh portions
+  </Card>
+  <Card title="Flexibility" icon="comments">
+    Use natural language - no specific format required
+  </Card>
+  <Card title="Context-Aware" icon="brain">
+    Understands common foods, restaurants, and portions
+  </Card>
+</CardGroup>
+
+## Limitations
+
+<Warning>
+AI estimates are **approximations** based on typical portions and standard recipes. For precise tracking, use barcode scanning or manual entry with exact measurements.
+</Warning>
+
+The AI may be less accurate for:
+- Homemade meals with custom recipes
+- Mixed dishes with many ingredients
+- Unusual or regional foods not in training data
+- Very large or very small portions
+
+## Privacy & Data
+
+<Info>
+Your food descriptions are sent to Cloudflare Workers AI for processing. No data is stored on external servers - the AI returns nutritional estimates which are saved locally on your device.
+</Info>
+
+## Tips for Best Results
+
+<Tip>
+**Be Specific About Quantities** - Instead of "some chicken", try "6oz grilled chicken breast" for better estimates.
+</Tip>
+
+<Tip>
+**Mention Preparation Methods** - "fried chicken" vs "grilled chicken" will return different nutritional values.
+</Tip>
+
+<Tip>
+**Include Sides and Drinks** - The AI can handle multiple items: "burger, fries, and a soda"
+</Tip>
+
+<Tip>
+**Use Restaurant Names** - Mentioning specific restaurants enables menu-specific accuracy.
+</Tip>
+
+## Error Handling
+
+If the AI fails to process your input:
+
+1. You'll see an error message: "Could not interpret your description"
+2. Check your internet connection
+3. Try rephrasing your description more simply
+4. As a fallback, use manual food entry instead
+
+## Technical Details
+
+For developers and curious users:
+
+- **Model**: Cloudflare Workers AI (specific model configurable in Worker)
+- **Endpoint**: `https://calpalai.rishabh-1keshri.workers.dev/food-from-text`
+- **Request Format**: JSON with `description` and optional `restaurantId` and `menu`
+- **Response**: JSON with all nutritional fields
+- **Timeout**: Standard HTTP request timeout
+
+See the [useAI.ts](https://github.com/yourrepo/calpal/blob/main/hooks/useAI.ts) hook for implementation details.

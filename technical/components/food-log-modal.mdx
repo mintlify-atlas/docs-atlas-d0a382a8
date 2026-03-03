@@ -1,0 +1,247 @@
+---
+title: FoodLogModal
+description: Modal component for adding and editing food log entries with nutritional information
+---
+
+## Overview
+
+The `FoodLogModal` component provides a form interface for manually adding or editing food log entries. It includes fields for nutritional macros, cost, weight, and validates required inputs before submission.
+
+## Features
+
+- Support for both add and edit modes
+- Form validation for required fields
+- Nutritional macro inputs (calories, protein, carbs, fat)
+- Cost and weight tracking
+- Optional product image display
+- Keyboard-aware layout for mobile
+- Theme-aware styling
+
+## Props
+
+<ParamField path="visible" type="boolean" required>
+  Controls the visibility of the modal.
+</ParamField>
+
+<ParamField path="onClose" type="() => void" required>
+  Callback function invoked when the user closes the modal.
+</ParamField>
+
+<ParamField path="onSubmit" type="() => void" required>
+  Callback function invoked when the user submits the form. The parent component should handle saving the `form` data.
+</ParamField>
+
+<ParamField path="form" type="object" required>
+  Form state object containing all input values:
+  - `name`: string - Product name
+  - `cost`: string - Product cost in dollars
+  - `weight`: string - Product weight in grams
+  - `calories`: string - Calories
+  - `protein`: string - Protein in grams
+  - `carbs`: string - Carbohydrates in grams (optional)
+  - `fat`: string - Fat in grams (optional)
+  - `image`: string - Product image URL (optional)
+</ParamField>
+
+<ParamField path="setForm" type="(form: any) => void" required>
+  Function to update the form state. Typically used with a state setter.
+</ParamField>
+
+<ParamField path="isEdit" type="boolean">
+  When `true`, displays "Save" button text instead of "Add". Defaults to `false`.
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Modal title displayed at the top (e.g., "Add Food Manually" or "Edit Food Entry").
+</ParamField>
+
+## Form Fields
+
+### Required Fields (marked with *)
+
+<ParamField path="name" type="string" required>
+  Product or food item name. Required for submission.
+</ParamField>
+
+<ParamField path="cost" type="string" required>
+  Cost in USD. Uses decimal keyboard input. Required for submission.
+</ParamField>
+
+<ParamField path="weight" type="string" required>
+  Weight in grams. Uses decimal keyboard input. Required for submission.
+</ParamField>
+
+<ParamField path="calories" type="string" required>
+  Caloric content. Uses decimal keyboard input. Required for submission.
+</ParamField>
+
+<ParamField path="protein" type="string" required>
+  Protein content in grams. Uses decimal keyboard input. Required for submission.
+</ParamField>
+
+### Optional Fields
+
+<ParamField path="carbs" type="string">
+  Carbohydrate content in grams. Uses decimal keyboard input.
+</ParamField>
+
+<ParamField path="fat" type="string">
+  Fat content in grams. Uses decimal keyboard input.
+</ParamField>
+
+<ParamField path="image" type="string">
+  URL to product image. If provided, displays a 120x120 thumbnail at the top of the form.
+</ParamField>
+
+## Input Validation
+
+The submit button is automatically enabled/disabled based on form validation. From `components/FoodLogModal.tsx:20-27`:
+
+```tsx
+// Required: name, cost, weight, calories, protein
+const isFormValid = !!(
+  form.name &&
+  form.cost &&
+  form.weight &&
+  form.calories &&
+  form.protein
+);
+```
+
+The submit button:
+- Is disabled when any required field is empty
+- Changes visual appearance based on validation state
+- Displays reduced opacity when disabled
+
+## Support for Add and Edit Modes
+
+The component adapts its behavior based on the `isEdit` prop:
+
+- **Add Mode** (`isEdit={false}`): Button displays "Add"
+- **Edit Mode** (`isEdit={true}`): Button displays "Save"
+
+From `components/FoodLogModal.tsx:102-104`:
+
+```tsx
+<Text style={{ /* ... */ }}>
+  {isEdit ? 'Save' : 'Add'}
+</Text>
+```
+
+## Usage Examples
+
+### Adding a New Food Entry
+
+From `app/(tabs)/index.tsx:706-714`:
+
+```tsx
+<FoodLogModal
+  visible={manualModalVisible}
+  onClose={() => setManualModalVisible(false)}
+  onSubmit={handleManualSubmit}
+  form={manualForm}
+  setForm={setManualForm}
+  isEdit={false}
+  title="Add Food Manually"
+/>
+```
+
+### Editing an Existing Entry
+
+From `app/(tabs)/index.tsx:715-723`:
+
+```tsx
+<FoodLogModal
+  visible={editModalVisible}
+  onClose={() => setEditModalVisible(false)}
+  onSubmit={handleEditSubmit}
+  form={editForm}
+  setForm={setEditForm}
+  isEdit={true}
+  title="Edit Food Entry"
+/>
+```
+
+### Managing Form State
+
+```tsx
+const [manualForm, setManualForm] = useState({
+  name: '',
+  cost: '',
+  weight: '',
+  calories: '',
+  protein: '',
+  carbs: '',
+  fat: '',
+  image: '',
+});
+
+const handleManualSubmit = async () => {
+  // Validate form
+  if (!manualForm.name || !manualForm.cost || !manualForm.calories) {
+    return;
+  }
+  
+  // Create log entry
+  const entry = {
+    id: Date.now().toString(),
+    name: manualForm.name,
+    cost: parseFloat(manualForm.cost),
+    weight: parseFloat(manualForm.weight),
+    calories: parseFloat(manualForm.calories),
+    protein: parseFloat(manualForm.protein),
+    carbs: parseFloat(manualForm.carbs) || 0,
+    fat: parseFloat(manualForm.fat) || 0,
+    timestamp: new Date().toISOString(),
+  };
+  
+  // Save to database/state
+  await saveLogEntry(entry);
+  
+  // Reset form and close modal
+  setManualForm({
+    name: '',
+    cost: '',
+    weight: '',
+    calories: '',
+    protein: '',
+    carbs: '',
+    fat: '',
+    image: '',
+  });
+  setManualModalVisible(false);
+};
+```
+
+## UI Layout
+
+The modal features:
+
+1. **Drag Handle**: Visual indicator at the top for swipe-to-dismiss gesture
+2. **Title**: Customizable modal title
+3. **Product Image**: Optional thumbnail displayed when `form.image` is set
+4. **Form Fields**: Scrollable list of input fields with icons
+5. **Action Buttons**: Cancel and Submit buttons at the bottom
+
+### Icon Indicators
+
+Each field is accompanied by a relevant Material Community Icon:
+- Currency (`currency-usd`) for Cost
+- Weight (`weight-gram`) for Weight
+- Fire (`fire`) for Calories
+- Drumstick (`food-drumstick`) for Protein
+- Bread (`bread-slice`) for Carbs
+- Water (`water`) for Fat
+
+## Keyboard Handling
+
+The modal uses `KeyboardAvoidingView` to ensure form fields remain visible when the keyboard is open:
+
+```tsx
+<KeyboardAvoidingView
+  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+  style={{ flex: 1, justifyContent: 'flex-end', margin: 0 }}
+>
+```
+
+All numeric fields use `keyboardType="decimal-pad"` for optimal input experience.

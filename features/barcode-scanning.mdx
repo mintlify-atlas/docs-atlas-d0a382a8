@@ -1,0 +1,139 @@
+---
+title: Barcode Scanning
+description: Quickly log food by scanning product barcodes with automatic nutritional data from USDA FoodData Central
+---
+
+CalPal's barcode scanning feature allows you to instantly log packaged foods by scanning their barcodes. The app automatically retrieves nutritional information from the USDA FoodData Central database.
+
+## How It Works
+
+Barcode scanning integrates with the USDA FoodData Central API to provide accurate nutritional data for millions of branded and packaged food products.
+
+<Info>
+CalPal uses the USDA FoodData Central API, which includes comprehensive data for branded foods, restaurant items, and survey data from the Food and Nutrient Database for Dietary Studies (FNDDS).
+</Info>
+
+## Starting a Barcode Scan
+
+<Steps>
+  <Step title="Open the Scanner">
+    From the home screen, tap the floating + button and select **"Scan Barcode"** from the menu.
+  </Step>
+  
+  <Step title="Grant Camera Permission">
+    If this is your first time scanning, you'll be prompted to grant camera access. Tap **"Grant Permission"** to allow CalPal to use your camera.
+  </Step>
+  
+  <Step title="Position the Barcode">
+    Hold your device steady and position the barcode within the camera frame. The scanner supports multiple barcode formats.
+  </Step>
+  
+  <Step title="Wait for Detection">
+    The scanner will automatically detect and process the barcode. You'll see the camera view close once scanning is complete.
+  </Step>
+</Steps>
+
+## Supported Barcode Types
+
+CalPal recognizes all major barcode formats:
+
+<CardGroup cols={3}>
+  <Card title="UPC-A" icon="barcode">
+    Standard US/Canada product codes
+  </Card>
+  <Card title="UPC-E" icon="barcode">
+    Compressed UPC barcodes
+  </Card>
+  <Card title="EAN-13" icon="barcode">
+    International product codes
+  </Card>
+  <Card title="EAN-8" icon="barcode">
+    Short EAN barcodes
+  </Card>
+  <Card title="Code 39/93/128" icon="barcode">
+    Various alphanumeric codes
+  </Card>
+  <Card title="QR Codes" icon="qrcode">
+    Two-dimensional QR codes
+  </Card>
+</CardGroup>
+
+## After Scanning
+
+Once a barcode is scanned, CalPal performs the following steps:
+
+1. **Searches USDA Database** - The barcode is sent to USDA FoodData Central to find matching products
+2. **Retrieves Product Details** - If found, the app fetches the full nutritional profile including:
+   - Product name and brand
+   - Calories (kcal)
+   - Protein (g)
+   - Carbohydrates (g)
+   - Fat (g)
+3. **Prompts for Cost** - You'll be asked to enter how much you paid for the item
+4. **Creates Log Entry** - The food log is automatically created with all nutritional data
+
+<Note>
+If the product isn't found in the USDA database, you'll be prompted to enter the nutritional information manually.
+</Note>
+
+## Search Instead of Scan
+
+If you can't scan a barcode or prefer to search manually:
+
+<Tabs>
+  <Tab title="Using Search Bar">
+    When the scanner modal opens, you'll see a search bar at the top. Type the product name to search the USDA database without scanning.
+    
+    The search returns up to 10 results from both branded products and FNDDS survey data.
+  </Tab>
+  
+  <Tab title="Selecting Results">
+    Tap any search result to view its nutritional information. The app will fetch detailed data and prompt you for the cost before creating the log entry.
+  </Tab>
+</Tabs>
+
+## Camera Permission Required
+
+Barcode scanning requires camera access to function:
+
+<Warning>
+Without camera permission, you won't be able to scan barcodes. You can still use the search feature within the scanner modal, or add food manually.
+</Warning>
+
+If you previously denied camera access:
+
+1. Go to your device Settings
+2. Find CalPal in the app list
+3. Enable Camera permissions
+4. Return to CalPal and try scanning again
+
+## Scanning Tips
+
+<Tip>
+**Good Lighting** - Scan in well-lit areas for best results. Poor lighting can make barcodes difficult to read.
+</Tip>
+
+<Tip>
+**Hold Steady** - Keep your phone steady and at the right distance. Most barcodes scan best from 6-12 inches away.
+</Tip>
+
+<Tip>
+**Clean Barcodes** - Make sure the barcode isn't damaged, wrinkled, or covered. Flatten any curved surfaces if possible.
+</Tip>
+
+<Tip>
+**Try Different Angles** - If a barcode won't scan, try tilting your phone slightly or adjusting the distance.
+</Tip>
+
+## Data Source Details
+
+Nutritional data is sourced from:
+
+- **USDA FoodData Central** - Official government nutrition database
+- **Branded Foods** - Direct from manufacturers and retailers
+- **FNDDS Survey Data** - From national dietary surveys
+
+All nutritional values are standardized to provide:
+- Calories in kcal
+- Macronutrients in grams (g)
+- Consistent serving size information

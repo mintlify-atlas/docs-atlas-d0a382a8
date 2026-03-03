@@ -1,0 +1,326 @@
+---
+title: AI Input
+description: Natural language food entry system using Cloudflare Workers AI for parsing text descriptions into structured nutrition data
+---
+
+## Overview
+
+The AI Input feature allows users to describe what they ate in natural language, which is then processed by Cloudflare Workers AI to extract structured nutritional information. The AI integration is managed through the `hooks/useAI.ts` module.
+
+<Note>
+  The `AiInputModal.tsx` component file exists but is currently commented out. The AI functionality is implemented inline in the home screen using the `getFoodEntryFromText` hook.
+</Note>
+
+## Architecture
+
+The AI system consists of:
+
+1. **Frontend Input**: Text input field in the home screen
+2. **AI Hook** (`hooks/useAI.ts`): Client-side helper that calls the Cloudflare Worker
+3. **Cloudflare Worker**: Serverless function that processes text using Workers AI
+4. **Response Parsing**: Normalizes and validates AI-generated nutritional data
+
+## Integration with useAI Hook
+
+The `getFoodEntryFromText` function is the primary interface for AI-powered food entry. From `hooks/useAI.ts:85-114`:
+
+```typescript
+export async function getFoodEntryFromText(
+  description: string,
+  opts?: { restaurantId?: RestaurantId | null }
+): Promise<AiFoodEntry> {
+  if (!description.trim()) {
+    throw new Error('Description is empty');
+  }
+
+  const payload: any = {
+    description,
+  };
+
+  if (opts?.restaurantId) {
+    payload.restaurantId = opts.restaurantId;
+    payload.menu = getRestaurantMenu(opts.restaurantId);
+  }
+
+  const response = await fetch(CALPAL_WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`AI service failed with status ${response.status}`);
+  }
+
+  const data = await response.json();
+  return normaliseFoodResult(data);
+}
+```
+
+## Natural Language Processing Workflow
+
+1. **User Input**: User types a description like "2 slices of pepperoni pizza"
+2. **API Call**: `getFoodEntryFromText()` sends the description to Cloudflare Worker
+3. **AI Processing**: Worker uses Cloudflare Workers AI to extract:
+   - Food name
+   - Estimated calories
+   - Macronutrients (protein, carbs, fat)
+   - Estimated cost
+   - Estimated weight
+4. **Normalization**: Response is validated and clamped to reasonable ranges
+5. **Entry Creation**: Structured data is saved as a food log entry
+
+## AiFoodEntry Type
+
+The AI returns a structured object matching this type (from `hooks/useAI.ts:9-19`):
+
+```typescript
+export type AiFoodEntry = {
+  name: string;
+  barcode?: string;
+  image?: string;
+  cost?: number;
+  weight?: number;
+  calories?: number;
+  fat?: number;
+  carbs?: number;
+  protein?: number;
+};
+```
+
+## Data Validation and Normalization
+
+The AI response is normalized to ensure data quality (from `hooks/useAI.ts:60-81`):
+
+```typescript
+function normaliseFoodResult(raw: any): AiFoodEntry {
+  if (!raw || typeof raw !== 'object') raw = {};
+
+  const calories = clamp(parseNumber(raw.calories), 0, 3000);
+  const weight = clamp(parseNumber(raw.weight), 0, 1500);
+  const fat = clamp(parseNumber(raw.fat), 0, 200);
+  const carbs = clamp(parseNumber(raw.carbs), 0, 400);
+  const protein = clamp(parseNumber(raw.protein), 0, 200);
+  const cost = clamp(parseNumber(raw.cost), 0, 80);
+
+  return {
+    name: raw.name || 'Unknown Food',
+    barcode: raw.barcode || '',
+    image: raw.image || '',
+    cost: cost ?? 0,
+    weight: weight ?? 0,
+    calories: calories ?? 0,
+    fat: fat ?? 0,
+    carbs: carbs ?? 0,
+    protein: protein ?? 0,
+  };
+}
+```
+
+### Validation Rules
+
+- **Calories**: 0-3000 kcal
+- **Weight**: 0-1500g
+- **Fat**: 0-200g
+- **Carbs**: 0-400g
+- **Protein**: 0-200g
+- **Cost**: $0-$80
+
+## Loading States
+
+The AI input system tracks loading state to provide user feedback. From `app/(tabs)/index.tsx:440-477`:
+
+```tsx
+const handleAiSubmit = async () => {
+  if (!aiInputText.trim()) return;
+  try {
+    setAiLoading(true);
+
+    // Call shared AI helper (which talks to the Cloudflare Worker)
+    const aiEntry = await getFoodEntryFromText(aiInputText);
+
+    const now = new Date();
+    const localDate = now.toLocaleDateString('en-CA');
+    const entry = {
+      id: Date.now().toString(),
+      name: aiEntry.name || 'AI Food',
+      barcode: aiEntry.barcode || '',
+      image: aiEntry.image || '',
+      cost: aiEntry.cost ?? 0,
+      weight: aiEntry.weight ?? 0,
+      calories: aiEntry.calories,
+      fat: aiEntry.fat,
+      carbs: aiEntry.carbs,
+      protein: aiEntry.protein,
+      timestamp: now.toISOString(),
+      date: localDate,
+    };
+
+    // Save to database and state
+    await logCollection.insert(entry as any);
+    const allLogs = await logCollection.find().exec();
+    dispatch<any>({ type: 'logs/setLogs', payload: allLogs.map(mapLogFromDb) });
+    
+    setAiInputText('');
+    setAiInputVisible(false);
+  } catch (e: any) {
+    console.error('AI submission error', e);
+    Alert.alert('Error', e.message || 'Failed to process your request.');
+  } finally {
+    setAiLoading(false);
+  }
+};
+```
+
+## Error Handling
+
+Error handling includes:
+
+1. **Empty Input**: Returns early if description is empty
+2. **Network Errors**: Catches fetch failures and displays alert
+3. **API Errors**: Checks response status and throws descriptive errors
+4. **Invalid Data**: Normalizes unexpected values to safe defaults
+
+## Restaurant Context
+
+The AI can be enhanced with restaurant menu context for more accurate results:
+
+```typescript
+const aiEntry = await getFoodEntryFromText(
+  "Big Mac and large fries",
+  { restaurantId: 'mcdonalds' }
+);
+```
+
+When a `restaurantId` is provided:
+- The complete menu JSON is sent to the AI
+- AI uses menu data to improve accuracy
+- Exact matches from menu are preferred
+
+### Supported Restaurants
+
+From `hooks/useAI.ts:27-30`:
+
+```typescript
+export const RESTAURANT_MENUS: Record<RestaurantId, any[]> = {
+  mcdonalds: mcdonaldsMenu as any[],
+  chickfila: chickfilaMenu as any[],
+};
+```
+
+## Cloudflare Worker Configuration
+
+The Worker endpoint is configured in `hooks/useAI.ts:44`:
+
+```typescript
+const CALPAL_WORKER_URL = 'https://calpalai.rishabh-1keshri.workers.dev/food-from-text';
+```
+
+## Usage Example
+
+### Basic AI Entry
+
+```tsx
+const [aiInputText, setAiInputText] = useState('');
+const [aiLoading, setAiLoading] = useState(false);
+
+const handleAiSubmit = async () => {
+  if (!aiInputText.trim()) return;
+  
+  setAiLoading(true);
+  try {
+    const aiEntry = await getFoodEntryFromText(aiInputText);
+    
+    // Create log entry from AI result
+    const newLog = {
+      id: Date.now().toString(),
+      name: aiEntry.name,
+      calories: aiEntry.calories,
+      protein: aiEntry.protein,
+      carbs: aiEntry.carbs,
+      fat: aiEntry.fat,
+      cost: aiEntry.cost,
+      weight: aiEntry.weight,
+      timestamp: new Date().toISOString(),
+    };
+    
+    // Save to database
+    await saveLogEntry(newLog);
+    
+    // Reset input
+    setAiInputText('');
+  } catch (error) {
+    Alert.alert('Error', 'Failed to process your request.');
+  } finally {
+    setAiLoading(false);
+  }
+};
+```
+
+### With Restaurant Context
+
+```tsx
+const handleRestaurantAiSubmit = async (restaurantId: string) => {
+  setAiLoading(true);
+  try {
+    const aiEntry = await getFoodEntryFromText(aiInputText, {
+      restaurantId
+    });
+    
+    // Process entry...
+  } catch (error) {
+    Alert.alert('Error', 'Failed to process your request.');
+  } finally {
+    setAiLoading(false);
+  }
+};
+```
+
+## UI Implementation
+
+The AI input UI is rendered inline in the home screen:
+
+```tsx
+{aiInputVisible && (
+  <Pressable style={styles.aiInputOverlay} onPress={() => setAiInputVisible(false)}>
+    <Pressable
+      style={styles.aiInputWrapper}
+      onPress={(e) => e.stopPropagation()}
+    >
+      <View
+        style={[
+          styles.aiInputContainer,
+          { backgroundColor: Colors[colorScheme].card, borderColor: Colors[colorScheme].tint }
+        ]}
+      >
+        <TextInput
+          style={[styles.aiInput, { color: Colors[colorScheme].text }]}
+          placeholder="Tell the AI what you ate..."
+          placeholderTextColor={Colors[colorScheme].icon}
+          value={aiInputText}
+          onChangeText={setAiInputText}
+          multiline
+          autoFocus
+        />
+        <Pressable
+          style={[
+            styles.aiSendButton,
+            { backgroundColor: aiInputText.trim() && !aiLoading 
+                ? Colors[colorScheme].tint 
+                : Colors[colorScheme].tabIconDefault 
+            }
+          ]}
+          onPress={handleAiSubmit}
+          disabled={!aiInputText.trim() || aiLoading}
+        >
+          {aiLoading ? (
+            <ActivityIndicator size="small" color={Colors[colorScheme].background} />
+          ) : (
+            <Ionicons name="send" size={18} color={Colors[colorScheme].background} />
+          )}
+        </Pressable>
+      </View>
+    </Pressable>
+  </Pressable>
+)}
+```

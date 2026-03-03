@@ -1,0 +1,246 @@
+---
+title: Restaurant Menu Finder
+description: Browse nutritional information for popular restaurant chains and filter by calories, protein, and more
+---
+
+The Restaurant Menu Finder helps you make informed decisions when eating out by providing complete nutritional information for popular restaurant chains.
+
+## Supported Restaurants
+
+CalPal currently includes menu data for:
+
+<CardGroup cols={2}>
+  <Card title="McDonald's" icon="m" iconType="solid">
+    Full menu with calories, macros, and serving sizes
+  </Card>
+  <Card title="Chick-fil-A" icon="drumstick-bite">
+    Complete nutritional data for all menu items
+  </Card>
+</CardGroup>
+
+<Info>
+More restaurants will be added in future updates. Each restaurant includes complete nutritional data sourced from official menu information.
+</Info>
+
+## Accessing Restaurant Menus
+
+<Steps>
+  <Step title="Navigate to Restaurant Tab">
+    Tap the **Restaurant** tab in the bottom navigation bar.
+  </Step>
+  
+  <Step title="Search Restaurants (Optional)">
+    Use the search bar at the top to filter the restaurant list by name.
+  </Step>
+  
+  <Step title="Select a Restaurant">
+    Tap on a restaurant card to view its full menu.
+  </Step>
+</Steps>
+
+## Browsing Menus
+
+Restaurant menus are organized into collapsible sections for easy navigation:
+
+<Tabs>
+  <Tab title="McDonald's Sections">
+    - Burgers & Sandwiches
+    - Chicken & Fish
+    - Salads
+    - Breakfast
+    - Sides & Snacks
+    - Beverages
+    - Desserts & Shakes
+    - Happy Meal
+  </Tab>
+  
+  <Tab title="Chick-fil-A Sections">
+    - Entrées
+    - Salads
+    - Sides
+    - Treats
+    - Beverages
+    - Breakfast
+    - Sauces & Dressings
+  </Tab>
+</Tabs>
+
+<Tip>
+Tap on section headers to expand or collapse them. Sections are open by default for quick browsing.
+</Tip>
+
+## Filtering Menu Items
+
+Use the powerful filtering system to find items that match your dietary goals:
+
+### Available Filters
+
+<CardGroup cols={2}>
+  <Card title="By Name" icon="magnifying-glass">
+    Search for specific menu items by typing in the search box
+  </Card>
+  <Card title="Calorie Range" icon="fire">
+    Set minimum and maximum calorie limits
+  </Card>
+  <Card title="Protein Range" icon="drumstick-bite">
+    Filter by protein content (g)
+  </Card>
+</CardGroup>
+
+### How to Filter
+
+<Steps>
+  <Step title="Enter Search Term">
+    Type a food name in the "Search by name" field (e.g., "chicken", "salad").
+  </Step>
+  
+  <Step title="Set Calorie Limits">
+    Enter values in "Min Cal" and "Max Cal" fields to filter by calorie range.
+    
+    Example: Min Cal: 300, Max Cal: 600 shows only moderate-calorie items.
+  </Step>
+  
+  <Step title="Set Protein Limits">
+    Use "Min Protein" and "Max Protein" to filter by protein content.
+    
+    Example: Min Protein: 20 shows only high-protein items.
+  </Step>
+  
+  <Step title="View Results">
+    The menu automatically updates as you type. Only matching items are displayed.
+  </Step>
+</Steps>
+
+<Note>
+All filters work together. Setting multiple filters shows only items that match ALL criteria.
+</Note>
+
+## Menu Item Information
+
+Each menu item displays comprehensive nutritional data:
+
+```text
+Item Name: Big Mac
+Calories: 550 | Protein: 25g | Carbs: 45g | Fat: 30g
+Serving: 1 sandwich (219g)
+```
+
+### Data Included
+
+- **Item Name** - Official menu name
+- **Calories** - Total energy content
+- **Protein** - Protein content in grams
+- **Carbohydrates** - Total carb content in grams
+- **Fat** - Total fat content in grams
+- **Serving Size** (McDonald's only) - Standard portion description
+
+## Example Use Cases
+
+<Tabs>
+  <Tab title="High-Protein Meals">
+    **Goal**: Find meals with at least 30g of protein
+    
+    1. Open McDonald's menu
+2. Enter Min Protein: **30**
+    3. Browse results like:
+       - Quarter Pounder with Cheese (30g)
+       - Double Quarter Pounder (48g)
+       - Chicken McNuggets (10 piece, 23g) + side
+  </Tab>
+  
+  <Tab title="Calorie-Controlled Options">
+    **Goal**: Stay under 500 calories
+    
+    1. Open Chick-fil-A menu
+    2. Enter Max Cal: **500**
+    3. Find options like:
+       - Grilled Chicken Sandwich (320 cal)
+       - Cobb Salad (390 cal)
+       - 8-count Grilled Nuggets (140 cal)
+  </Tab>
+  
+  <Tab title="Balanced Macros">
+    **Goal**: High protein, moderate calories
+    
+    1. Set Min Protein: **20**
+    2. Set Max Cal: **600**
+    3. See items with good protein-to-calorie ratios
+  </Tab>
+</Tabs>
+
+## Collapsible Sections
+
+Menu sections can be expanded or collapsed for easier navigation:
+
+- **Tap section header** to toggle open/closed
+- **Sections open by default** when viewing a menu
+- **Filters apply across all sections** - empty sections are hidden
+
+<Tip>
+When using filters, sections with no matching items automatically disappear, making it easier to see your options.
+</Tip>
+
+## Returning to Restaurant List
+
+To go back to the restaurant selection:
+
+1. Tap the **"< Back to Restaurants"** link at the top of the menu
+2. This returns you to the main restaurant list
+
+## Performance Features
+
+The menu system includes optimizations for smooth browsing:
+
+- **Virtualized scrolling** - Only renders visible items
+- **Pagination** - Loads 30 items at a time
+- **Automatic loading** - More items load as you scroll down
+- **Memoized filtering** - Fast response when changing filters
+
+<Info>
+Large menus (100+ items) are paginated automatically. Scroll to the bottom to load more items.
+</Info>
+
+## Data Sources
+
+Restaurant menu data is:
+
+- Sourced from **official restaurant nutrition information**
+- Stored locally in JSON files: `assets/restaurants/mcdonalds.json` and `chickfila.json`
+- Updated periodically to reflect menu changes
+- Based on standard serving sizes
+
+<Warning>
+Nutritional values are for standard menu items. Customizations (extra cheese, no sauce, etc.) may alter the nutritional content.
+</Warning>
+
+## Tips for Using Restaurant Menus
+
+<Tip>
+**Compare Before You Order** - Review menu options before going to the restaurant to make faster, healthier choices.
+</Tip>
+
+<Tip>
+**Use Protein Filter** - Set a minimum protein value to find the most filling options that support your fitness goals.
+</Tip>
+
+<Tip>
+**Check Serving Sizes** - Pay attention to serving size information to understand what you're actually getting.
+</Tip>
+
+<Tip>
+**Save Filters** - Common filter combinations (like "under 500 cal, over 25g protein") help you quickly find go-to meals.
+</Tip>
+
+## Future Additions
+
+More restaurants coming soon:
+
+- Subway
+- Taco Bell
+- Chipotle
+- Starbucks
+- And more...
+
+<Note>
+Want to see a specific restaurant added? [Submit a request](https://github.com/yourrepo/calpal/issues) or contribute the menu data yourself!
+</Note>

@@ -1,0 +1,451 @@
+---
+title: State Management
+description: Redux Toolkit implementation for managing food logs and user profile state in CalPal
+---
+
+## Overview
+
+CalPal uses **Redux Toolkit** for centralized state management, providing predictable state updates and seamless integration with WatermelonDB persistence.
+
+<Note>
+  Redux Toolkit reduces Redux boilerplate by 70%+ compared to traditional Redux, with built-in best practices like Immer for immutable updates.
+</Note>
+
+## Store Configuration
+
+The Redux store is configured in `store/index.ts:5` with two main slices:
+
+<CodeGroup>
+```typescript store/index.ts
+import { configureStore } from '@reduxjs/toolkit';
+import logsReducer from './logsSlice';
+import userProfileReducer from './userProfileSlice';
+
+export const store = configureStore({
+  reducer: {
+    logs: logsReducer,
+    userProfile: userProfileReducer,
+  },
+});
+
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
+```
+</CodeGroup>
+
+<Info>
+  TypeScript types `RootState` and `AppDispatch` are exported for type-safe access to state and dispatch throughout the app.
+</Info>
+
+## Store Structure
+
+The store manages two primary domains:
+
+<CardGroup cols={2}>
+  <Card title="logs" icon="list">
+    Food purchase entries with nutrition data, cost, and timestamps
+  </Card>
+  
+  <Card title="userProfile" icon="user">
+    User health metrics including BMI history, height, weight, and preferences
+  </Card>
+</CardGroup>
+
+## Logs Slice
+
+The logs slice (`store/logsSlice.ts`) manages all food entry data.
+
+### State Shape
+
+<CodeGroup>
+```typescript store/logsSlice.ts (Types)
+export type LogEntry = {
+  id: string;
+  name: string;
+  image?: string;
+  barcode: string;
+  cost: number;
+  calories?: number;
+  fat?: number;
+  carbs?: number;
+  protein?: number;
+  date: string;
+  localDate?: string;
+};
+
+interface LogsState {
+  entries: LogEntry[];
+}
+
+const initialState: LogsState = {
+  entries: [],
+};
+```
+</CodeGroup>
+
+### Actions
+
+Three synchronous actions manage log entries (`store/logsSlice.ts:29`):
+
+<Accordion title="addLog - Add new food entry">
+  ```typescript
+  addLog(state, action: PayloadAction<LogEntry>) {
+    state.entries.unshift(action.payload);
+  }
+  ```
+  
+  Adds a new log to the **beginning** of the array (most recent first).
+  
+  **Usage:**
+  ```typescript
+  dispatch(addLog({
+    id: 'abc123',
+    name: 'Chicken Sandwich',
+    barcode: '012345678',
+    cost: 8.99,
+    calories: 450,
+    protein: 35,
+    fat: 18,
+    carbs: 42,
+    date: '2026-03-02T14:30:00Z'
+  }));
+  ```
+</Accordion>
+
+<Accordion title="setLogs - Replace all entries">
+  ```typescript
+  setLogs(state, action: PayloadAction<LogEntry[]>) {
+    state.entries = action.payload;
+  }
+  ```
+  
+  Replaces the entire log array. Primarily used when loading from database.
+  
+  **Usage:**
+  ```typescript
+  dispatch(setLogs(logsFromDatabase));
+  ```
+</Accordion>
+
+<Accordion title="clearLogs - Remove all entries">
+  ```typescript
+  clearLogs(state) {
+    state.entries = [];
+  }
+  ```
+  
+  Empties the logs array. Used when user signs out or resets data.
+  
+  **Usage:**
+  ```typescript
+  dispatch(clearLogs());
+  ```
+</Accordion>
+
+### Async Thunks
+
+Two thunks handle database synchronization (`store/logsSlice.ts:45`):
+
+<CodeGroup>
+```typescript Load from Database
+export const loadLogsFromStorage = () => async (dispatch: any) => {
+  try {
+    const logs = await database.get<Log>('logs').query().fetch();
+    const logEntries: LogEntry[] = logs.map(log => ({
+      id: log.id,
+      name: log.name,
+      image: log.image,
+      barcode: log.barcode,
+      cost: log.cost,
+      calories: log.calories,
+      fat: log.fat,
+      carbs: log.carbs,
+      protein: log.protein,
+      date: log.date,
+      localDate: log.localDate,
+    }));
+    dispatch(setLogs(logEntries));
+  } catch (error) {
+    console.error('Error loading logs from WatermelonDB:', error);
+  }
+};
+```
+
+```typescript Save to Database
+export const saveLogsToStorage = async (logs: LogEntry[]) => {
+  try {
+    await database.write(async () => {
+      const logCollection = database.get<Log>('logs');
+      // Clear existing logs
+      const existingLogs = await logCollection.query().fetch();
+      for (const log of existingLogs) {
+        await log.destroyPermanently();
+      }
+      // Insert new logs
+      for (const log of logs) {
+        await logCollection.create(entry => {
+          entry._raw.id = log.id;
+          entry.name = log.name;
+          entry.image = log.image;
+          entry.barcode = log.barcode;
+          entry.cost = log.cost;
+          entry.calories = log.calories;
+          entry.fat = log.fat;
+          entry.carbs = log.carbs;
+          entry.protein = log.protein;
+          entry.date = log.date;
+          entry.localDate = log.localDate;
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Error saving logs to WatermelonDB:', error);
+  }
+};
+```
+</CodeGroup>
+
+<Warning>
+  `saveLogsToStorage` is a **full replacement** operation - it deletes all existing logs and recreates them. For incremental updates, use WatermelonDB's update/create methods directly.
+</Warning>
+
+## User Profile Slice
+
+The user profile slice (`store/userProfileSlice.ts`) manages health metrics and BMI tracking.
+
+### State Shape
+
+<CodeGroup>
+```typescript store/userProfileSlice.ts (Types)
+export interface BmiEntry {
+  date: string;
+  bmi: number;
+  weight: number;
+  height: number;
+}
+
+export interface UserProfileData {
+  age: number;
+  height: number;
+  weight: number;
+  bmiHistory: BmiEntry[];
+  lastPrompt: string;
+  unitSystem: 'us' | 'metric';
+}
+
+interface UserProfileState {
+  profile: UserProfileData | null;
+}
+
+const initialState: UserProfileState = {
+  profile: null,
+};
+```
+</CodeGroup>
+
+<Info>
+  The profile starts as `null` and is populated after calling `loadUserProfileFromStorage()` on app launch.
+</Info>
+
+### Actions
+
+Three actions manage profile data (`store/userProfileSlice.ts:32`):
+
+<Accordion title="setUserProfile - Set or update profile">
+  ```typescript
+  setUserProfile(state, action: PayloadAction<UserProfileData>) {
+    state.profile = action.payload;
+  }
+  ```
+  
+  **Usage:**
+  ```typescript
+  dispatch(setUserProfile({
+    age: 28,
+    height: 175,
+    weight: 70,
+    unitSystem: 'metric',
+    bmiHistory: [],
+    lastPrompt: ''
+  }));
+  ```
+</Accordion>
+
+<Accordion title="addBmiEntry - Track new BMI measurement">
+  ```typescript
+  addBmiEntry(state, action: PayloadAction<BmiEntry>) {
+    if (state.profile) {
+      state.profile.bmiHistory.push(action.payload);
+      state.profile.weight = action.payload.weight;
+      state.profile.height = action.payload.height;
+    }
+  }
+  ```
+  
+  Appends to BMI history and updates current weight/height.
+  
+  **Usage:**
+  ```typescript
+  dispatch(addBmiEntry({
+    date: '2026-03-02',
+    bmi: 22.86,
+    weight: 70,
+    height: 175
+  }));
+  ```
+</Accordion>
+
+<Accordion title="setLastPrompt - Store AI prompt history">
+  ```typescript
+  setLastPrompt(state, action: PayloadAction<string>) {
+    if (state.profile) {
+      state.profile.lastPrompt = action.payload;
+    }
+  }
+  ```
+  
+  Tracks the last AI prompt for context in future interactions.
+</Accordion>
+
+### Async Thunks
+
+Profile persistence thunks (`store/userProfileSlice.ts:53`):
+
+<CodeGroup>
+```typescript Load Profile
+export const loadUserProfileFromStorage = () => async (dispatch: any) => {
+  try {
+    const profileCollection = database.get<UserProfile>('user_profiles');
+    const profiles = await profileCollection.query().fetch();
+    if (profiles.length > 0) {
+      const profile = profiles[0];
+      dispatch(setUserProfile({
+        age: profile.age,
+        height: profile.height,
+        weight: profile.weight,
+        unitSystem: profile.unitSystem,
+        bmiHistory: profile.bmiHistory,
+        lastPrompt: profile.lastPrompt,
+      }));
+    }
+  } catch (error) {
+    console.error('Error loading user profile from WatermelonDB:', error);
+  }
+};
+```
+
+```typescript Save Profile
+export const saveUserProfileToStorage = (profile: UserProfileData) => async () => {
+  try {
+    await database.write(async () => {
+      const profileCollection = database.get<UserProfile>('user_profiles');
+      const profiles = await profileCollection.query().fetch();
+      if (profiles.length > 0) {
+        // Update existing profile
+        await profiles[0].update((userProfile: UserProfile) => {
+          userProfile.age = profile.age;
+          userProfile.height = profile.height;
+          userProfile.weight = profile.weight;
+          userProfile.unitSystem = profile.unitSystem;
+          userProfile.bmiHistory = profile.bmiHistory;
+          userProfile.lastPrompt = profile.lastPrompt;
+        });
+      } else {
+        // Create new profile
+        await profileCollection.create((userProfile: UserProfile) => {
+          userProfile.age = profile.age;
+          userProfile.height = profile.height;
+          userProfile.weight = profile.weight;
+          userProfile.unitSystem = profile.unitSystem;
+          userProfile.bmiHistory = profile.bmiHistory;
+          userProfile.lastPrompt = profile.lastPrompt;
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Error saving user profile to WatermelonDB:', error);
+  }
+};
+```
+</CodeGroup>
+
+<Note>
+  Unlike logs, the profile uses **upsert logic**: update if exists, create if doesn't. Only one profile exists per user.
+</Note>
+
+## State-Database Synchronization
+
+CalPal maintains a **two-way sync** between Redux state and WatermelonDB:
+
+<Steps>
+  <Step title="App Launch">
+    Call `loadLogsFromStorage()` and `loadUserProfileFromStorage()` to hydrate Redux from database
+  </Step>
+  
+  <Step title="User Updates">
+    Dispatch Redux actions (`addLog`, `setUserProfile`) to update in-memory state
+  </Step>
+  
+  <Step title="Persist Changes">
+    Call `saveLogsToStorage()` or `saveUserProfileToStorage()` to write to database
+  </Step>
+  
+  <Step title="Offline Support">
+    Database acts as source of truth - state can be rebuilt from it at any time
+  </Step>
+</Steps>
+
+## Usage in Components
+
+<CodeGroup>
+```typescript Accessing State (Hooks)
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+
+function AnalyticsScreen() {
+  const logs = useSelector((state: RootState) => state.logs.entries);
+  const profile = useSelector((state: RootState) => state.userProfile.profile);
+  
+  // Component logic...
+}
+```
+
+```typescript Dispatching Actions
+import { useDispatch } from 'react-redux';
+import { addLog } from '@/store/logsSlice';
+import { AppDispatch } from '@/store';
+
+function FoodLogModal() {
+  const dispatch = useDispatch<AppDispatch>();
+  
+  const handleSave = () => {
+    dispatch(addLog({
+      id: generateId(),
+      name: 'Pizza Slice',
+      barcode: '123456',
+      cost: 4.50,
+      calories: 285,
+      date: new Date().toISOString()
+    }));
+  };
+}
+```
+
+```typescript Loading from Database
+import { loadLogsFromStorage } from '@/store/logsSlice';
+import { loadUserProfileFromStorage } from '@/store/userProfileSlice';
+
+function App() {
+  const dispatch = useDispatch<AppDispatch>();
+  
+  useEffect(() => {
+    dispatch(loadLogsFromStorage());
+    dispatch(loadUserProfileFromStorage());
+  }, []);
+}
+```
+</CodeGroup>
+
+<Info>
+  All Redux state updates use **Immer** under the hood, allowing "mutative" code that's actually producing immutable updates.
+</Info>

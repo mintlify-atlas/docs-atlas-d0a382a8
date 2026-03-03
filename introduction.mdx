@@ -1,0 +1,75 @@
+---
+title: Introduction to CalPal
+description: Track your food purchases, nutrition intake, and personal health metrics with ease
+---
+
+# Welcome to CalPal
+
+CalPal is a cross-platform mobile application for tracking food purchases, nutritional intake, and personal health metrics. Built with React Native, Expo, and Redux Toolkit, CalPal helps you log foods via barcode scanning, manual entry, or AI-powered text input, while monitoring your spending and visualizing your weight/BMI trends over time.
+
+<Note>
+  **Privacy First**: All data is stored locally on your device. No data is sent to external servers.
+</Note>
+
+## Key Features
+
+CalPal provides a comprehensive suite of features to help you track and understand your nutrition and spending habits:
+
+<CardGroup cols={2}>
+  <Card title="Food Logging" icon="utensils" href="/features/food-logging">
+    Log foods quickly with barcode scanning, manual entry, or AI-powered text descriptions. All nutritional data is tracked automatically.
+  </Card>
+  
+  <Card title="Barcode Scanning" icon="barcode" href="/features/barcode-scanning">
+    Scan product barcodes to instantly fetch nutritional information from the USDA FoodData Central database.
+  </Card>
+  
+  <Card title="AI Food Entry" icon="brain" href="/features/ai-food-entry">
+    Simply tell the AI what you ate in natural language (e.g., "a chicken burrito bowl with rice and beans, plus a coke") and it will create a structured food log.
+  </Card>
+  
+  <Card title="Health Tracking" icon="heartbeat" href="/features/health-tracking">
+    Monitor your weight, BMI, and nutritional intake over time with interactive charts and analytics.
+  </Card>
+  
+  <Card title="Analytics & Insights" icon="chart-line" href="/features/analytics">
+    Visualize your weight/BMI history, track calories and macros, and receive personalized tips for healthy eating.
+  </Card>
+  
+  <Card title="Restaurant Menus" icon="store" href="/features/restaurant-menus">
+    Browse and search restaurant menus (McDonald's, Chick-fil-A) with detailed nutritional information and filtering options.
+  </Card>
+</CardGroup>
+
+## Local-First Architecture
+
+CalPal is built with privacy as a core principle:
+
+- **All data stays on your device** - No cloud sync or external servers
+- **No account required** - Start tracking immediately
+- **Full control** - Export or delete your data anytime
+- **Works offline** - Full functionality without internet (except barcode/AI lookups)
+
+## Tech Stack
+
+CalPal is built with modern, production-ready technologies:
+
+- **React Native** with Expo for cross-platform mobile development
+- **Redux Toolkit** for predictable state management
+- **TypeScript** for type safety and better developer experience
+- **WatermelonDB** for local-first database storage
+- **Expo Camera** for barcode scanning
+- **USDA FoodData Central API** for accurate nutritional data
+- **Cloudflare Workers AI** for natural language food entry
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Get started with CalPal in minutes - install, set up your profile, and log your first food.
+  </Card>
+  
+  <Card title="Installation" icon="download" href="/installation">
+    Set up the development environment and run CalPal on iOS/Android.
+  </Card>
+</CardGroup>

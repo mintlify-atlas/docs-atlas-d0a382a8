@@ -1,0 +1,180 @@
+---
+title: BarcodeScannerModal
+description: Modal component for scanning product barcodes and searching for food items using the USDA FoodData Central API
+---
+
+## Overview
+
+The `BarcodeScannerModal` component provides a camera-based barcode scanner and product search interface. It integrates with the USDA FoodData Central API to fetch nutritional information for scanned or searched food products.
+
+## Features
+
+- Camera-based barcode scanning using expo-camera
+- Manual product search with debounced API calls
+- Support for multiple barcode formats (UPC, EAN, QR codes, etc.)
+- Automatic nutritional data retrieval from USDA database
+- Fallback handling for products not found in database
+
+## Props
+
+<ParamField path="visible" type="boolean" required>
+  Controls the visibility of the modal.
+</ParamField>
+
+<ParamField path="onClose" type="() => void" required>
+  Callback function invoked when the user closes the modal.
+</ParamField>
+
+<ParamField path="onScanned" type="(product: SearchProduct) => void" required>
+  Callback function invoked when a product is successfully scanned or selected. Receives a `SearchProduct` object containing:
+  - `fdcId`: USDA FoodData Central ID
+  - `description`: Product name/description
+  - `brandOwner`: Brand name
+  - `gtinUpc`: Barcode/UPC number
+  - `image_url`: Product image URL (if available)
+  - `nutriments`: Nutrition information object with `calories`, `protein`, `fat`, and `carbs`
+</ParamField>
+
+## Camera Integration
+
+The component uses `expo-camera` for barcode scanning with the following supported formats:
+
+- QR codes
+- EAN-13, EAN-8
+- UPC-A, UPC-E
+- Code 39, Code 93, Code 128
+- PDF417, Aztec, Data Matrix
+
+### Permission Handling
+
+The component automatically requests camera permissions when opened and displays appropriate UI states:
+- Loading state while requesting permissions
+- Permission prompt if not granted
+- Scanner view once permission is granted
+
+## Barcode Detection Flow
+
+1. User scans a barcode using the camera
+2. Barcode data is captured via `onBarcodeScanned` handler
+3. Component queries USDA FoodData Central API using the barcode
+4. If found, fetches detailed nutritional information
+5. Calls `onScanned` with the complete product data
+6. Falls back to minimal product data (barcode only) if not found
+
+Relevant code from `components/BarcodeScannerModal.tsx:159-203`:
+
+```tsx
+const handleBarcodeScanned = async (result: BarcodeScanningResult) => {
+  setScanned(true);
+  const barcode = String(result.data);
+  try {
+    const url = `${FDC_BASE_URL}/foods/search?query=${encodeURIComponent(barcode)}&pageSize=1&dataType=Branded&api_key=${USDA_API_KEY}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Network response was not ok');
+    const data = await response.json();
+    if (data.foods && data.foods.length > 0) {
+      const basicFood = data.foods[0];
+      let product = mapFdcFoodToSearchProduct(basicFood);
+      if (basicFood.fdcId) {
+        const detailed = await fetchFdcFoodDetails(basicFood.fdcId);
+        if (detailed) product = detailed;
+      }
+      onScanned(product);
+    } else {
+      // Fallback: minimal product with barcode only
+      onScanned({
+        fdcId: 0,
+        description: '',
+        brandOwner: '',
+        gtinUpc: barcode,
+        image_url: undefined,
+        nutriments: {},
+      });
+    }
+  } catch (e) {
+    console.error('USDA barcode search error', e);
+    onScanned({
+      fdcId: 0,
+      description: '',
+      brandOwner: '',
+      gtinUpc: barcode,
+      image_url: undefined,
+      nutriments: {},
+    });
+  }
+};
+```
+
+## Product Search
+
+In addition to barcode scanning, users can manually search for products using the search bar. The search:
+
+- Debounces input (400ms delay)
+- Queries USDA FoodData Central API
+- Fetches detailed nutritional data for each result
+- Displays results in a scrollable list
+- Shows loading indicators and error states
+
+## Product Lookup Integration
+
+The component integrates with USDA FoodData Central API:
+
+- **Base URL**: `https://api.nal.usda.gov/fdc/v1`
+- **Search endpoint**: `/foods/search` - Search by barcode or text
+- **Details endpoint**: `/food/{fdcId}` - Fetch complete nutritional data
+- **API Key**: Configured via `EXPO_PUBLIC_USDA_API_KEY` environment variable
+
+### Nutrient Mapping
+
+The component maps USDA nutrient data to CalPal's nutrition format:
+
+- **Energy (208)**: Calories in kcal
+- **Protein (203)**: Protein in grams
+- **Total lipid/Fat (204)**: Fat in grams
+- **Carbohydrate (205)**: Carbs in grams
+
+## Usage Example
+
+From `app/(tabs)/index.tsx:674-678`:
+
+```tsx
+<BarcodeScannerModal
+  visible={scannerVisible}
+  onClose={() => setScannerVisible(false)}
+  onScanned={handleScanned}
+/>
+```
+
+Handling scanned products:
+
+```tsx
+const handleScanned = async (product: SearchProduct) => {
+  setScannerVisible(false);
+  setLoadingProduct(true);
+  
+  // Process the scanned product data
+  const newLog = {
+    id: Date.now().toString(),
+    name: product.description || 'Unknown',
+    barcode: product.gtinUpc || '',
+    image: product.image_url || '',
+    calories: product.nutriments.calories,
+    protein: product.nutriments.protein,
+    fat: product.nutriments.fat,
+    carbs: product.nutriments.carbs,
+    // ... additional fields
+  };
+  
+  // Save to database/state
+  setLoadingProduct(false);
+};
+```
+
+## UI States
+
+1. **Permission Request**: Displays when camera permission hasn't been granted
+2. **Scanner View**: Shows camera feed with barcode detection overlay
+3. **Search Mode**: Displays when user types in the search bar (hides camera)
+4. **Loading**: Shows activity indicator during API calls
+5. **Results**: Displays list of search results with product images and descriptions
+6. **Error**: Shows error message if API calls fail

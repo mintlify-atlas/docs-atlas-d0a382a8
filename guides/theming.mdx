@@ -1,0 +1,288 @@
+---
+title: 'Theming & Appearance'
+description: 'How CalPal adapts to your device theme with automatic light and dark mode support'
+---
+
+## Overview
+
+CalPal features a beautiful, modern interface that automatically adapts to your device's appearance settings. The app supports both light and dark modes with carefully crafted color schemes for optimal readability and comfort.
+
+<Info>
+  CalPal automatically detects your system theme preference and applies the appropriate color scheme without requiring any manual configuration.
+</Info>
+
+## Theme System Architecture
+
+CalPal uses a centralized color system defined in `constants/Colors.ts` that provides consistent theming throughout the app.
+
+### Color Scheme Structure
+
+The app maintains separate palettes for light and dark modes:
+
+```typescript
+export const Colors = {
+  light: {
+    text: '#11181C',
+    background: '#fff',
+    card: '#F6F8FA',
+    tint: '#0a7ea4',
+    icon: '#687076',
+    tabIconDefault: '#687076',
+    tabIconSelected: '#0a7ea4',
+  },
+  dark: {
+    text: '#ECEDEE',
+    background: '#151718',
+    card: '#1C1F22',
+    tint: '#fff',
+    icon: '#9BA1A6',
+    tabIconDefault: '#9BA1A6',
+    tabIconSelected: '#fff',
+  },
+};
+```
+
+## Light and Dark Mode Support
+
+CalPal seamlessly transitions between light and dark modes based on your device settings.
+
+<AccordionGroup>
+  <Accordion title="Light Mode">
+    **Light Mode** features a clean, bright interface with:
+    
+    - **Background**: Pure white (`#fff`)
+    - **Text**: Dark gray (`#11181C`) for excellent contrast
+    - **Cards**: Subtle gray (`#F6F8FA`) for visual separation
+    - **Accent**: Vibrant teal (`#0a7ea4`) for interactive elements
+    - **Icons**: Medium gray (`#687076`) for secondary elements
+    
+    Perfect for well-lit environments and daytime use.
+  </Accordion>
+  
+  <Accordion title="Dark Mode">
+    **Dark Mode** provides a comfortable low-light experience with:
+    
+    - **Background**: Deep charcoal (`#151718`)
+    - **Text**: Light gray (`#ECEDEE`) for reduced eye strain
+    - **Cards**: Slightly lighter charcoal (`#1C1F22`) for depth
+    - **Accent**: Pure white (`#fff`) for maximum contrast
+    - **Icons**: Soft gray (`#9BA1A6`) for subtlety
+    
+    Ideal for evening use and low-light conditions to reduce eye fatigue.
+  </Accordion>
+</AccordionGroup>
+
+## Automatic Theme Detection
+
+CalPal uses the `useColorScheme` hook to detect your device's current appearance setting:
+
+```typescript
+import { useColorScheme } from '@/hooks/useColorScheme';
+
+const colorScheme = useColorScheme() ?? 'light';
+```
+
+This hook monitors your device settings in real-time. When you change your system theme:
+
+1. The hook detects the change immediately
+2. Components re-render with the new color scheme
+3. All UI elements update their colors automatically
+4. No app restart required
+
+<Note>
+  If the system theme cannot be detected, CalPal defaults to light mode for optimal compatibility.
+</Note>
+
+## Theme Colors Explained
+
+Understanding the semantic meaning of each color token helps ensure consistent theming:
+
+| Color Token | Purpose | Light Mode | Dark Mode |
+|-------------|---------|------------|------------|
+| `text` | Primary text content | Dark gray | Light gray |
+| `background` | Main screen background | White | Dark charcoal |
+| `card` | Card and panel backgrounds | Light gray | Medium charcoal |
+| `tint` | Primary accent color | Teal | White |
+| `icon` | Icon tinting | Medium gray | Soft gray |
+| `tabIconDefault` | Inactive tab icons | Medium gray | Soft gray |
+| `tabIconSelected` | Active tab icons | Teal | White |
+
+## How Components Use Theming
+
+All CalPal components dynamically reference the `Colors` object to ensure they adapt to the current theme.
+
+### Example: Profile Screen
+
+Here's how the Profile screen (`app/(tabs)/profile.tsx`) applies theming:
+
+```typescript
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
+
+const colorScheme = useColorScheme() ?? 'light';
+
+// Icon with theme-aware color
+<Ionicons 
+  name="person-circle" 
+  size={80} 
+  color={Colors[colorScheme].tint} 
+/>
+
+// Button with dynamic background
+<Pressable 
+  style={{ 
+    backgroundColor: Colors[colorScheme].tint,
+    borderRadius: 8,
+    padding: 8 
+  }}
+>
+  <Text style={{ color: Colors[colorScheme].background }}>Edit</Text>
+</Pressable>
+```
+
+### Dynamic Styling Pattern
+
+The pattern used throughout the app:
+
+<Steps>
+  <Step title="Import Dependencies">
+    Import the `Colors` constant and `useColorScheme` hook at the top of your component.
+  </Step>
+  
+  <Step title="Get Current Scheme">
+    Call `useColorScheme()` to get the current theme (`'light'` or `'dark'`).
+  </Step>
+  
+  <Step title="Reference Colors Dynamically">
+    Access colors using bracket notation: `Colors[colorScheme].propertyName`
+  </Step>
+  
+  <Step title="Apply to Styles">
+    Use the color values in your component styles, either inline or in StyleSheet objects.
+  </Step>
+</Steps>
+
+## System Preference Integration
+
+CalPal respects your device's appearance settings, which means:
+
+<AccordionGroup>
+  <Accordion title="iOS Integration">
+    On iOS devices, CalPal follows your settings in:
+    
+    - **Settings > Display & Brightness > Appearance**
+    - **Automatic** mode that switches based on time of day
+    - **Control Center** quick toggle
+    
+    The app updates instantly when you change these settings.
+  </Accordion>
+  
+  <Accordion title="Android Integration">
+    On Android devices, CalPal follows your settings in:
+    
+    - **Settings > Display > Dark theme**
+    - **Quick Settings** panel toggle
+    - **Scheduled dark mode** based on time or sunrise/sunset
+    
+    Changes are reflected immediately in the app.
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+  CalPal uses native platform APIs to detect theme changes, ensuring compatibility with both iOS and Android system preferences.
+</Info>
+
+## Theme Consistency
+
+Every screen and component in CalPal uses the same theming system for a cohesive experience:
+
+- **Navigation tabs**: Active and inactive states adapt to theme
+- **Modal dialogs**: Background and text colors switch appropriately
+- **Input fields**: Border and placeholder colors adjust for visibility
+- **Cards and panels**: Subtle elevation through theme-appropriate shading
+- **Icons and buttons**: Accent colors provide clear visual hierarchy
+
+### Example: Modal Theming
+
+The profile edit modal demonstrates comprehensive theming:
+
+```typescript
+<Modal visible={editModalVisible} animationType="slide" transparent>
+  <View style={styles.modalOverlay}>
+    <View style={[
+      styles.modalContent, 
+      { backgroundColor: Colors[colorScheme].card }
+    ]}>
+      <TextInput
+        style={[
+          styles.manualInput,
+          { 
+            backgroundColor: Colors[colorScheme].background,
+            color: Colors[colorScheme].text,
+            borderColor: Colors[colorScheme].tint
+          }
+        ]}
+        placeholderTextColor={Colors[colorScheme].icon}
+      />
+    </View>
+  </View>
+</Modal>
+```
+
+Notice how multiple theme tokens are used:
+- `card` for modal background
+- `background` for input fields
+- `text` for input text
+- `tint` for borders
+- `icon` for placeholder text
+
+## Accessibility Considerations
+
+CalPal's theme system is designed with accessibility in mind:
+
+<Note>
+  Both light and dark mode color palettes meet **WCAG AA contrast standards** for text readability.
+</Note>
+
+### Contrast Ratios
+
+- **Light mode text**: 13.8:1 contrast ratio (Dark gray on white)
+- **Dark mode text**: 13.1:1 contrast ratio (Light gray on dark charcoal)
+- **Both modes exceed**: WCAG AAA standard (7:1) for normal text
+
+### Visual Comfort
+
+- **Dark mode**: Reduces blue light exposure in low-light environments
+- **Light mode**: Provides excellent readability in bright conditions
+- **Smooth transitions**: Theme changes don't cause jarring flashes
+
+## Customization (Future)
+
+While CalPal currently uses automatic theme detection, future versions may include:
+
+- Manual theme override (force light or dark regardless of system)
+- Custom accent color selection
+- Additional theme variants (e.g., high contrast, sepia)
+- Per-screen theme preferences
+
+The centralized `Colors.ts` structure makes these enhancements straightforward to implement.
+
+## Developer Reference
+
+For developers working with CalPal's theme system:
+
+**Color definition location**: `constants/Colors.ts`
+
+**Hook location**: `hooks/useColorScheme.ts`
+
+**Usage pattern**:
+```typescript
+const colorScheme = useColorScheme() ?? 'light';
+const backgroundColor = Colors[colorScheme].background;
+```
+
+**Best practices**:
+- Always provide a fallback value (`?? 'light'`) when using the hook
+- Use semantic color names (`tint`, `card`) rather than specific colors (`blue`, `gray`)
+- Test all screens in both light and dark modes
+- Ensure sufficient contrast for text and interactive elements

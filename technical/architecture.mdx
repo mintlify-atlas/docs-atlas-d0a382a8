@@ -1,0 +1,236 @@
+---
+title: Architecture Overview
+description: Comprehensive overview of CalPal's technical architecture, stack, and project structure
+---
+
+## Tech Stack
+
+CalPal is built with modern React Native technologies optimized for cross-platform mobile development:
+
+<CardGroup cols={2}>
+  <Card title="Framework" icon="react">
+    **React Native 0.76.9** with **Expo ~52.0**
+    
+    File-based routing via **Expo Router ~4.0**
+  </Card>
+  
+  <Card title="State Management" icon="database">
+    **Redux Toolkit 2.7.0**
+    
+    Centralized state with typed actions and reducers
+  </Card>
+  
+  <Card title="Persistence" icon="hard-drive">
+    **WatermelonDB 0.28.0**
+    
+    Local-first SQLite database with JSI performance
+  </Card>
+  
+  <Card title="Language" icon="code">
+    **TypeScript 5.3.3**
+    
+    Full type safety across the entire codebase
+  </Card>
+</CardGroup>
+
+## Project Structure
+
+CalPal follows Expo Router's file-based routing convention with a clear separation of concerns:
+
+<CodeGroup>
+```bash Project Tree
+source/
+├── app/                    # Screens and routing
+│   ├── (tabs)/            # Tab-based navigation
+│   │   ├── index.tsx      # Home screen
+│   │   ├── restaurant.tsx # Restaurant finder
+│   │   ├── analytics.tsx  # Analytics dashboard
+│   │   ├── profile.tsx    # User profile
+│   │   └── _layout.tsx    # Tab navigation config
+│   └── _layout.tsx        # Root layout
+├── components/            # Reusable UI components
+│   ├── ui/               # Base UI components
+│   ├── ProfileModal.tsx
+│   ├── FoodLogModal.tsx
+│   ├── BarcodeScannerModal.tsx
+│   └── AiInputModal.tsx
+├── store/                # Redux state management
+│   ├── index.ts          # Store configuration
+│   ├── logsSlice.ts      # Food logs state
+│   └── userProfileSlice.ts # User profile state
+├── db/                   # Database layer
+│   └── database.ts       # WatermelonDB config and models
+├── hooks/                # Custom React hooks
+│   ├── useAI.ts
+│   ├── useColorScheme.ts
+│   └── useThemeColor.ts
+└── constants/            # App constants
+```
+</CodeGroup>
+
+## Navigation Architecture
+
+CalPal uses Expo Router with a tab-based navigation pattern defined in `app/(tabs)/_layout.tsx:11`:
+
+<CodeGroup>
+```tsx app/(tabs)/_layout.tsx
+import { Tabs } from 'expo-router';
+import { HapticTab } from '@/components/ui/HapticTab';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+
+export default function TabLayout() {
+  const colorScheme = useColorScheme();
+
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        headerShown: true,
+        tabBarButton: HapticTab,
+        tabBarBackground: TabBarBackground,
+      }}>
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />, 
+        }}
+      />
+      <Tabs.Screen
+        name="restaurant"
+        options={{
+          title: "Restaurant",
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="fork.knife" color={color} />, 
+        }}
+      />
+      <Tabs.Screen
+        name="analytics"
+        options={{
+          title: 'Analytics',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />, 
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle" color={color} />, 
+        }}
+      />
+    </Tabs>
+  );
+}
+```
+</CodeGroup>
+
+<Info>
+  The navigation includes haptic feedback via `HapticTab` for enhanced user experience on iOS devices.
+</Info>
+
+## Key Dependencies
+
+<Accordion title="Core Framework & Navigation">
+  - **expo** (~52.0.46): Development platform and build tooling
+  - **expo-router** (~4.0.20): File-based routing system
+  - **@react-navigation/native** (^7.0.14): Navigation primitives
+  - **@react-navigation/bottom-tabs** (^7.2.0): Tab navigation
+  - **react-native-gesture-handler** (~2.20.2): Touch gesture handling
+  - **react-native-screens** (~4.4.0): Native screen management
+</Accordion>
+
+<Accordion title="State & Data">
+  - **@reduxjs/toolkit** (^2.7.0): State management with Redux
+  - **react-redux** (^9.2.0): React bindings for Redux
+  - **@nozbe/watermelondb** (^0.28.0): Local SQLite database
+  - **@react-native-async-storage/async-storage** (1.23.1): Key-value storage
+</Accordion>
+
+<Accordion title="Camera & Scanning">
+  - **expo-camera** (^16.0.18): Camera access for barcode scanning
+  - **expo-image-picker** (~16.0.6): Image selection from device library
+</Accordion>
+
+<Accordion title="Backend & AI">
+  - **@supabase/supabase-js** (^2.49.4): Backend services integration
+  - Custom AI hooks in `hooks/useAI.ts` for nutrition analysis
+</Accordion>
+
+<Accordion title="UI & Visualization">
+  - **react-native-chart-kit** (^6.12.0): Charts for analytics screen
+  - **react-native-svg** (^15.11.2): Vector graphics support
+  - **expo-blur** (~14.0.3): Blur effects for modals
+  - **react-native-modal** (^14.0.0-rc.1): Enhanced modal components
+</Accordion>
+
+## Data Flow Architecture
+
+<Steps>
+  <Step title="User Interaction">
+    User scans a barcode or inputs food manually via UI components
+  </Step>
+  
+  <Step title="Redux Action Dispatch">
+    Component dispatches Redux action (e.g., `addLog`, `setUserProfile`)
+  </Step>
+  
+  <Step title="State Update">
+    Redux reducer updates the centralized state in `store/`
+  </Step>
+  
+  <Step title="Database Persistence">
+    Thunk middleware saves to WatermelonDB for offline persistence
+  </Step>
+  
+  <Step title="UI Re-render">
+    Components subscribed to state automatically re-render with new data
+  </Step>
+</Steps>
+
+<Note>
+  CalPal follows a **local-first architecture**: all data is stored locally in WatermelonDB first, ensuring the app works completely offline. Cloud sync via Supabase is an enhancement, not a requirement.
+</Note>
+
+## Component Architecture
+
+CalPal's component structure separates concerns into:
+
+1. **Screen Components** (`app/`): Route-level components that orchestrate data and layout
+2. **Modal Components** (`components/`): Self-contained overlays for specific workflows
+3. **UI Components** (`components/ui/`): Reusable, styled primitives (themed text, icons, tabs)
+4. **Custom Hooks** (`hooks/`): Shared logic for AI, theming, and color schemes
+
+### Modal-Driven Workflows
+
+Key user workflows are encapsulated in modal components:
+
+- **FoodLogModal**: Add/edit food entries with nutrition data
+- **BarcodeScannerModal**: Scan product barcodes via camera
+- **ProfileModal**: Update user health metrics
+- **AiInputModal**: Natural language food input with AI parsing
+
+## Build Configuration
+
+<CodeGroup>
+```json package.json Scripts
+{
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "test": "jest --watchAll",
+    "lint": "expo lint"
+  }
+}
+```
+</CodeGroup>
+
+CalPal uses:
+- **expo-build-properties** for native build customization
+- **@morrowdigital/watermelondb-expo-plugin** for WatermelonDB native integration
+- **expo-dev-client** for custom development builds
+- **eas-cli** for production builds and deployment
+
+<Info>
+  The project leverages Expo's JSI (JavaScript Interface) for near-native performance with WatermelonDB operations.
+</Info>

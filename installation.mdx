@@ -1,0 +1,379 @@
+---
+title: Installation
+description: Set up CalPal for development with React Native and Expo
+---
+
+# Installation
+
+CalPal is built with React Native and Expo, making it easy to develop for both iOS and Android from a single codebase. This guide will walk you through setting up your development environment and running the app.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+<AccordionGroup>
+  <Accordion title="Node.js (v18 or higher)">
+    CalPal requires Node.js to run the development server and build tools.
+    
+    **Installation:**
+    - Download from [nodejs.org](https://nodejs.org/)
+    - Or use a version manager like [nvm](https://github.com/nvm-sh/nvm):
+    
+    ```bash
+    nvm install 18
+    nvm use 18
+    ```
+    
+    Verify installation:
+    ```bash
+    node --version
+    npm --version
+    ```
+  </Accordion>
+  
+  <Accordion title="Expo CLI">
+    Expo CLI is used to manage the development workflow.
+    
+    **Installation:**
+    
+    Expo CLI is included as a dependency in the project, but you can also install it globally:
+    
+    ```bash
+    npm install -g expo-cli
+    ```
+    
+    Verify installation:
+    ```bash
+    expo --version
+    ```
+  </Accordion>
+  
+  <Accordion title="iOS Development (macOS only)">
+    To run CalPal on iOS devices or simulators, you need:
+    
+    - **Xcode** (latest version from the Mac App Store)
+    - **Xcode Command Line Tools**:
+      ```bash
+      xcode-select --install
+      ```
+    - **CocoaPods** (installed automatically by Expo)
+    
+    Verify Xcode installation:
+    ```bash
+    xcodebuild -version
+    ```
+  </Accordion>
+  
+  <Accordion title="Android Development">
+    To run CalPal on Android devices or emulators, you need:
+    
+    - **Android Studio** ([download here](https://developer.android.com/studio))
+    - **Android SDK** (installed via Android Studio)
+    - **Java Development Kit (JDK)** - JDK 17 is recommended
+    
+    Configure environment variables in your `~/.bashrc`, `~/.zshrc`, or equivalent:
+    
+    ```bash
+    export ANDROID_HOME=$HOME/Library/Android/sdk
+    export PATH=$PATH:$ANDROID_HOME/emulator
+    export PATH=$PATH:$ANDROID_HOME/platform-tools
+    export PATH=$PATH:$ANDROID_HOME/tools
+    export PATH=$PATH:$ANDROID_HOME/tools/bin
+    ```
+    
+    Verify installation:
+    ```bash
+    adb --version
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Clone the Repository
+
+First, clone the CalPal repository from GitHub:
+
+```bash
+git clone <repository-url>
+cd calpal
+```
+
+<Note>
+  Replace `<repository-url>` with the actual Git repository URL for CalPal.
+</Note>
+
+## Install Dependencies
+
+CalPal uses npm for package management. Install all dependencies:
+
+<CodeGroup>
+```bash npm
+npm install
+```
+
+```bash yarn
+yarn install
+```
+
+```bash pnpm
+pnpm install
+```
+</CodeGroup>
+
+This will install all required packages including:
+- React Native and Expo SDK
+- Redux Toolkit for state management
+- WatermelonDB for local database
+- Expo Camera for barcode scanning
+- And many more (see `package.json` for full list)
+
+## Environment Variables
+
+CalPal requires API keys for certain features. Create a `.env` file in the project root:
+
+```bash .env
+# USDA FoodData Central API Key (required for barcode scanning)
+EXPO_PUBLIC_USDA_API_KEY=your_usda_api_key_here
+```
+
+<Info>
+  **Get a USDA API Key:**
+  
+  1. Visit [USDA FoodData Central](https://fdc.nal.usda.gov/api-key-signup.html)
+  2. Sign up for a free API key
+  3. Copy the key to your `.env` file
+</Info>
+
+## Camera Permissions Setup
+
+CalPal uses the device camera for barcode scanning. The camera permissions are already configured in `app.json`:
+
+```json app.json (source/app.json:40-45)
+[
+  "expo-camera",
+  {
+    "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+    "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+    "recordAudioAndroid": true
+  }
+]
+```
+
+**Android Permissions** (already configured in `app.json`):
+
+```json app.json (source/app.json:24-27)
+"permissions": [
+  "android.permission.CAMERA",
+  "android.permission.RECORD_AUDIO"
+]
+```
+
+No additional configuration is needed - the permissions will be requested at runtime when the user first tries to scan a barcode.
+
+## Start the Development Server
+
+Run the Expo development server:
+
+```bash package.json (source/package.json:6)
+npm start
+```
+
+This will start the Expo dev server and display a QR code in your terminal.
+
+## Run on iOS
+
+<Steps>
+  <Step title="Start iOS Simulator">
+    If you haven't already, open an iOS simulator from Xcode or use the Expo CLI:
+    
+    ```bash
+    npm run ios
+    ```
+    
+    This will:
+    1. Build the app for iOS
+    2. Launch the iOS Simulator
+    3. Install and run CalPal
+  </Step>
+  
+  <Step title="Run on Physical Device">
+    1. Install the **Expo Go** app from the App Store
+    2. Scan the QR code displayed in your terminal
+    3. The app will load on your device
+    
+    <Warning>
+      Some features like camera permissions may not work correctly in Expo Go. For full functionality, use a development build or run directly with `npm run ios`.
+    </Warning>
+  </Step>
+</Steps>
+
+## Run on Android
+
+<Steps>
+  <Step title="Start Android Emulator">
+    Open an Android emulator from Android Studio or use the Expo CLI:
+    
+    ```bash
+    npm run android
+    ```
+    
+    This will:
+    1. Build the app for Android
+    2. Launch the Android Emulator
+    3. Install and run CalPal
+  </Step>
+  
+  <Step title="Run on Physical Device">
+    1. Enable **Developer Options** and **USB Debugging** on your Android device
+    2. Connect your device via USB
+    3. Install the **Expo Go** app from the Play Store
+    4. Scan the QR code displayed in your terminal, or run:
+    
+    ```bash
+    npm run android
+    ```
+    
+    <Warning>
+      Some features like camera permissions may not work correctly in Expo Go. For full functionality, use a development build or run directly with `npm run android`.
+    </Warning>
+  </Step>
+</Steps>
+
+## Development Scripts
+
+CalPal includes several npm scripts for development:
+
+```json package.json (source/package.json:5-12)
+"scripts": {
+  "start": "expo start",
+  "reset-project": "node ./scripts/reset-project.js",
+  "android": "expo run:android",
+  "ios": "expo run:ios",
+  "web": "expo start --web",
+  "test": "jest --watchAll",
+  "lint": "expo lint"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="npm start" icon="play">
+    Start the Expo development server with hot reload
+  </Card>
+  
+  <Card title="npm run android" icon="android">
+    Build and run on Android emulator/device
+  </Card>
+  
+  <Card title="npm run ios" icon="apple">
+    Build and run on iOS simulator/device
+  </Card>
+  
+  <Card title="npm run web" icon="globe">
+    Run in web browser (experimental)
+  </Card>
+  
+  <Card title="npm test" icon="vial">
+    Run Jest tests in watch mode
+  </Card>
+  
+  <Card title="npm run lint" icon="check">
+    Lint code with Expo's ESLint config
+  </Card>
+</CardGroup>
+
+## Database Setup
+
+CalPal uses **WatermelonDB** for local-first data storage. The database is automatically initialized when you first run the app.
+
+**Database Collections:**
+- `logs` - Food log entries with nutritional data and cost
+- `user_profiles` - User profile data (age, height, weight, BMI history)
+
+No manual setup is required - the database schema is defined in the codebase and migrations run automatically.
+
+<Info>
+  To reset the database during development, use the "Clear All Data" button in the Profile tab, or run:
+  
+  ```bash
+  npm run reset-project
+  ```
+</Info>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Metro bundler cache issues">
+    If you encounter build errors or stale code, clear the Metro bundler cache:
+    
+    ```bash
+    expo start --clear
+    ```
+    
+    Or manually clear caches:
+    ```bash
+    rm -rf node_modules
+    rm -rf .expo
+    npm install
+    ```
+  </Accordion>
+  
+  <Accordion title="iOS build fails">
+    If iOS builds fail, try:
+    
+    1. Clean the build folder:
+       ```bash
+       cd ios && xcodebuild clean && cd ..
+       ```
+    
+    2. Reinstall pods:
+       ```bash
+       cd ios && pod install && cd ..
+       ```
+    
+    3. Reset Expo dev client:
+       ```bash
+       expo prebuild --clean
+       ```
+  </Accordion>
+  
+  <Accordion title="Android build fails">
+    If Android builds fail, try:
+    
+    1. Clean Gradle cache:
+       ```bash
+       cd android && ./gradlew clean && cd ..
+       ```
+    
+    2. Invalidate caches in Android Studio:
+       - Open Android Studio
+       - File → Invalidate Caches / Restart
+    
+    3. Check Java version:
+       ```bash
+       java -version  # Should be JDK 17
+       ```
+  </Accordion>
+  
+  <Accordion title="Camera permissions not working">
+    If barcode scanning doesn't work:
+    
+    1. Ensure you're using a development build (not Expo Go)
+    2. Check that camera permissions are granted in device settings
+    3. Rebuild the app:
+       ```bash
+       expo prebuild --clean
+       npm run ios  # or npm run android
+       ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Learn how to use CalPal and log your first food item.
+  </Card>
+  
+  <Card title="Architecture Overview" icon="sitemap" href="/technical/architecture">
+    Understand the codebase structure, Redux state, and component hierarchy.
+  </Card>
+</CardGroup>

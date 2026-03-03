@@ -1,0 +1,203 @@
+---
+title: Collapsible
+description: Expandable/collapsible section component with animated chevron indicator
+---
+
+## Overview
+
+The `Collapsible` component provides an expandable/collapsible section with a title and content area. It features a rotating chevron icon that indicates the current state and smooth animations.
+
+## Features
+
+- Toggle visibility of content with tap gesture
+- Animated chevron icon rotation (0° → 90°)
+- Optional default open state
+- Theme-aware styling
+- Accessible touch target
+
+## Props
+
+<ParamField path="title" type="string" required>
+  The text displayed in the collapsible header.
+</ParamField>
+
+<ParamField path="defaultOpen" type="boolean">
+  Controls the initial expanded state. Defaults to `false` (collapsed).
+</ParamField>
+
+<ParamField path="children" type="ReactNode" required>
+  The content to display when the section is expanded.
+</ParamField>
+
+## Component Structure
+
+From `components/ui/Collapsible.tsx:10-33`:
+
+```tsx
+export function Collapsible({ 
+  children, 
+  title, 
+  defaultOpen = false 
+}: PropsWithChildren & { title: string, defaultOpen?: boolean }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const theme = useColorScheme() ?? 'light';
+
+  return (
+    <ThemedView>
+      <TouchableOpacity
+        style={styles.heading}
+        onPress={() => setIsOpen((value) => !value)}
+        activeOpacity={0.8}>
+        <IconSymbol
+          name="chevron.right"
+          size={18}
+          weight="medium"
+          color={theme === 'light' ? Colors.light.icon : Colors.dark.icon}
+          style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
+        />
+
+        <ThemedText type="defaultSemiBold">{title}</ThemedText>
+      </TouchableOpacity>
+      {isOpen && <ThemedView style={styles.content}>{children}</ThemedView>}
+    </ThemedView>
+  );
+}
+```
+
+## Styling
+
+The component uses minimal styling to maintain flexibility:
+
+```typescript
+const styles = StyleSheet.create({
+  heading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  content: {
+    marginTop: 6,
+    marginLeft: 24,
+  },
+});
+```
+
+- **Heading**: Horizontal layout with 6px gap between icon and text
+- **Content**: Indented 24px from the left with 6px top margin
+
+## Usage in Analytics Screen
+
+The Collapsible component is used in the analytics screen to organize chart sections. From `app/(tabs)/analytics.tsx:53-98`:
+
+```tsx
+<Collapsible title="Weight Over Time">
+  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+    <LineChart
+      data={{
+        labels: weightChartData.labels,
+        datasets: [{ data: weightChartData.data }],
+      }}
+      width={Math.max(Dimensions.get('window').width - 32, weightChartData.labels.length * 60)}
+      height={220}
+      yAxisSuffix=" lbs"
+      chartConfig={{
+        backgroundColor: Colors[colorScheme].background,
+        backgroundGradientFrom: Colors[colorScheme].card,
+        backgroundGradientTo: Colors[colorScheme].card,
+        decimalPlaces: 1,
+        color: (opacity = 1) => Colors[colorScheme].tint,
+        labelColor: (opacity = 1) => Colors[colorScheme].text,
+      }}
+      bezier
+      style={{ marginVertical: 8, borderRadius: 16 }}
+    />
+  </ScrollView>
+</Collapsible>
+```
+
+## Usage in Restaurant Screen
+
+The component groups menu sections by category. From `app/(tabs)/restaurant.tsx:211-215`:
+
+```tsx
+<Collapsible title={section.title ?? ''} defaultOpen={true}>
+  {section.items.map((item) => (
+    // Menu item rendering...
+  ))}
+</Collapsible>
+```
+
+## Usage in Home Screen
+
+Used to organize scanned food entries. From `app/(tabs)/index.tsx:655-670`:
+
+```tsx
+<Collapsible title="View scanned foods">
+  <FlatList
+    data={scannedFoods}
+    keyExtractor={(item) => item.id}
+    renderItem={({ item }) => (
+      <View style={styles.scannedFoodItem}>
+        <ThemedText>{item.name}</ThemedText>
+        <ThemedText>{item.calories} cal</ThemedText>
+      </View>
+    )}
+  />
+</Collapsible>
+```
+
+## Common Patterns
+
+### Always Open by Default
+
+```tsx
+<Collapsible title="Important Information" defaultOpen={true}>
+  <ThemedText>This section is expanded by default</ThemedText>
+</Collapsible>
+```
+
+### With Complex Content
+
+```tsx
+<Collapsible title="Nutritional Details">
+  <ThemedView style={{ padding: 10 }}>
+    <ThemedText>Calories: 450</ThemedText>
+    <ThemedText>Protein: 25g</ThemedText>
+    <ThemedText>Carbs: 35g</ThemedText>
+    <ThemedText>Fat: 15g</ThemedText>
+  </ThemedView>
+</Collapsible>
+```
+
+### Multiple Sections
+
+```tsx
+<ThemedView>
+  <Collapsible title="Breakfast">
+    {/* Breakfast items */}
+  </Collapsible>
+  
+  <Collapsible title="Lunch">
+    {/* Lunch items */}
+  </Collapsible>
+  
+  <Collapsible title="Dinner">
+    {/* Dinner items */}
+  </Collapsible>
+</ThemedView>
+```
+
+## Accessibility
+
+The component uses `TouchableOpacity` with:
+- `activeOpacity={0.8}` for visual feedback
+- Large touch target (entire heading row)
+- Clear visual state indication via chevron rotation
+
+## Animation Details
+
+The chevron icon rotates using a transform:
+- **Collapsed**: `rotate: '0deg'` (pointing right)
+- **Expanded**: `rotate: '90deg'` (pointing down)
+
+The rotation happens instantly on tap, providing immediate visual feedback.
